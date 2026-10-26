@@ -343,14 +343,19 @@ def benchmark_matches():
     return names
 
 
-def load_benchmark(name, degrade="none", seed=0, dead_share=0.85, profile=None):
+def load_benchmark(name, degrade="none", seed=0, dead_share=0.85, profile=None, realism=None):
     """One benchmark match, ready to score. DFL matches get the ATD-like ball loss (src/degrade.py);
-    SG3 never does -- its gaps are its tracker's own."""
-    from src.degrade import degrade_ball
+    SG3 never does -- its gaps are its tracker's own. With a realism profile, every match is then
+    smoothed and loses players as the ATD does (degrade.realistic_tracking, E7)."""
+    from src.degrade import degrade_ball, realistic_tracking
     if name == "SG3":
-        return load_metrica_sample(os.path.join(BENCHMARK_DIR, "metrica", "SG3"))
-    match = load_dfl(os.path.join(BENCHMARK_DIR, "dfl", name))
-    return degrade_ball(match, profile, degrade, seed, dead_share)
+        match = load_metrica_sample(os.path.join(BENCHMARK_DIR, "metrica", "SG3"))
+    else:
+        match = degrade_ball(load_dfl(os.path.join(BENCHMARK_DIR, "dfl", name)), profile, degrade,
+                             seed, dead_share)
+    if realism is not None:
+        match = realistic_tracking(match, realism, seed)
+    return match
 
 
 def label_stats(match):

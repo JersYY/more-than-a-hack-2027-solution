@@ -1,0 +1,70 @@
+{
+ "source": "tactical ATD, graded frames, aggregates only; smoothing widths fitted on the other-match benchmark (scripts/atd_tracking_profile.py, E7)",
+ "ball_sigma_frames": 6.5,
+ "player_sigma_frames": 4.0,
+ "goalkeeper_missing_share": 0.073,
+ "outfield_missing_share": 0.039,
+ "missing_run_frames": 265,
+ "min_missing_frames": 25,
+ "fitted_on": [
+  "J03WMX",
+  "J03WN1",
+  "J03WOH"
+ ],
+ "measured": {
+  "ball": {
+   "acf": [
+    0.989,
+    0.975,
+    0.908,
+    0.663,
+    -0.02
+   ],
+   "acc_mps2": [
+    5.712,
+    18.239,
+    36.833
+   ]
+  },
+  "player_acf_lag4": 0.827,
+  "tracked_per_team_share_0_to_13": {
+   "home": [
+    0.005,
+    0.005,
+    0.01,
+    0.009,
+    0.01,
+    0.009,
+    0.007,
+    0.015,
+    0.028,
+    0.058,
+    0.223,
+    0.542,
+    0.075,
+    0.003
+   ],
+   "away": [
+    0.0,
+    0.006,
+    0.007,
+    0.009,
+    0.009,
+    0.007,
+    0.006,
+    0.013,
+    0.023,
+    0.052,
+    0.211,
+    0.61,
+    0.043,
+    0.003
+   ]
+  },
+  "individual_loss_per_team": 0.459,
+  "goalkeeper_missing_share": 0.073,
+  "outfield_missing_share": 0.039,
+  "player_gap_frames_mean": 264.626,
+  "player_gaps_counted": 964
+ }
+}

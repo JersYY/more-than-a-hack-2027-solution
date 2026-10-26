@@ -293,3 +293,35 @@ BLOCKERS: none.
 NEXT COMMAND: resume the improvement round (benchmark realism first, then the model). Every new
   parameter is chosen on other matches only.
 ```
+
+---
+
+## Run 6 — Improvement round, part 1: a realistic benchmark (paused)
+
+**2026-10-27** · team **Aziz goes to barcelona** · the submission is unchanged (`configs/final.toml`,
+sha256 `db7538d3...0eea61`).
+
+```text
+STATUS: paused at the team's request; tooling committed, no model change
+FILES CREATED/CHANGED:
+  new      scripts/atd_tracking_profile.py, configs/atd_tracking_profile.json (aggregates only)
+  updated  src/degrade.py (realistic_tracking: ball/player smoothing, player loss)
+           src/omb.py (load_benchmark realism=), scripts/omb_eval.py and omb_calibrate.py
+           (--realism; --grid e7, declared before any realism score)
+FINDINGS (benchmark only, fresh seeds 2-3, dead_weighted 0.9):
+  ATD tracking  ball smoothed like a Gaussian of 6.5 frames, players 4 frames; goalkeeper slot
+                missing 7.3%, outfield 3.9%, gaps ~265 frames (aggregates)
+  realism       final 0.515 -> 0.4625 spellF1; official baseline 0.320 -> 0.294
+                ball smoothing -0.039, player loss -0.015, player smoothing 0.000
+  recalibration guarded descent on grid e7 from hybrid_v2: no move accepted (0.4713, seeds 0-1)
+  learned       per-frame logistic team evidence: worse on DFL test matches (0.453 vs 0.474),
+                better on SG3 (0.53-0.54 vs 0.51-0.52); not adopted
+  oracles       perfect team evidence 0.960; perfect dead-ball evidence 0.503: the loss is in
+                team attribution
+  errors        possessions under 2 s: 51.5% never predicted; partial matches start early
+                (median -9 frames, p25 -51)
+NEXT COMMAND: measure transition latency by type with and without realism; then try a time
+  shift of team evidence, relative-velocity gating of control, touch detection, and the
+  last-touch restart prior. Every new parameter is chosen on other matches only (grid e7,
+  --realism, guard, LOMO); re-freeze only on a clear win.
+```

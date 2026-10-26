@@ -35,7 +35,7 @@ for _path in (ROOT, os.path.join(ROOT, "evaluation")):
 import possession_metrics as pm  # noqa: E402
 from src.config import from_dict, load  # noqa: E402
 from src.dead_ball import dead_evidence  # noqa: E402
-from src.degrade import load_profile  # noqa: E402
+from src.degrade import load_profile, load_realism  # noqa: E402
 from src.features import build_features  # noqa: E402
 from src.omb import benchmark_matches, load_benchmark  # noqa: E402
 from src.possession_evidence import team_evidence  # noqa: E402
@@ -67,15 +67,39 @@ GRID = (
     ("evidence", "free_m", [1.5, 2.5, 4.0]),
     ("evidence", "flight_mps", [6.0, 8.0, 12.0]),
 )
+# E7, declared before any score on the realistic benchmark (--realism). The E6 grid widened where
+# the E6 optimum sat on its edge (evidence_scale, alive_bonus) and where a smoothed ball moves the
+# geometry (control_m, flight_mps); the costs gain the rc1 values. Each list contains hybrid_v2's.
+GRID_E7 = (
+    ("temporal", "evidence_scale", [0.2, 0.4, 0.8, 1.2, 1.6, 2.4]),
+    ("temporal", "turnover_cost", [3.0, 4.5, 5.7, 7.0, 9.0, 12.0]),
+    ("temporal", "stop_cost", [4.0, 5.5, 6.9, 8.9, 11.0]),
+    ("temporal", "restart_cost", [4.0, 5.0, 5.9, 7.9, 10.0]),
+    ("temporal", "alive_bonus", [0.3, 0.7, 1.2, 1.8, 2.4]),
+    ("dead_ball", "activity_threshold_mps", [1.0, 1.2, 1.4, 1.6, 1.8, 2.0]),
+    ("dead_ball", "activity_scale_mps", [0.2, 0.4, 0.8, 1.2]),
+    ("dead_ball", "activity_max_score", [1.0, 2.0, 3.0, 4.0]),
+    ("dead_ball", "out_score", [2.0, 4.0, 6.0]),
+    ("dead_ball", "still_score", [0.0, 0.5, 1.0, 2.0]),
+    ("dead_ball", "moving_score", [0.0, 1.0, 2.0]),
+    ("dead_ball", "missing_score", [0.0, 0.5, 1.0, 2.0, 3.0]),
+    ("dead_ball", "missing_min_s", [2.0, 5.0, 10.0]),
+    ("evidence", "control_m", [0.7, 1.0, 1.5, 2.0, 2.5]),
+    ("evidence", "free_m", [1.0, 1.5, 2.5, 4.0]),
+    ("evidence", "max_score", [2.0, 3.0, 4.0, 6.0]),
+    ("evidence", "flight_mps", [6.0, 8.0, 10.0, 12.0, 16.0]),
+)
+GRIDS = {"e6": GRID, "e7": GRID_E7}
+EXPERIMENT = {"e6": "E6", "e7": "E7"}
 
 
-def prepare(matches, degrade, seeds, dead_share, base):
+def prepare(matches, degrade, seeds, dead_share, base, realism=None):
     """[(name, labels, context, features)] -- the expensive part, once."""
     profile = load_profile()
     cases = []
     for name in matches:
         for seed in seeds:
-            match = load_benchmark(name, degrade, seed, dead_share, profile)
+            match = load_benchmark(name, degrade, seed, dead_share, profile, realism)
             context = frame_context(match.tracking.n_frames, match.blocks, match.tracking)
             features = build_features(match.tracking, context, base, match.pitch)
             cases.append((name, match.labels, context, features))
@@ -117,8 +141,8 @@ def synthetic_guard(config):
     return True
 
 
-def descend(cases, config, log=None, guard=None):
-    """Coordinate descent over GRID from config; returns (best config, best mean spellF1).
+def descend(cases, config, log=None, guard=None, grid=GRID):
+    """Coordinate descent over grid from config; returns (best config, best mean spellF1).
 
     guard, if given, is a predicate every accepted configuration must satisfy; a move that would
     improve the score but fails it is skipped in favour of the next-best value.
@@ -126,7 +150,7 @@ def descend(cases, config, log=None, guard=None):
     best = mean_score(cases, config)
     for passes in range(MAX_PASSES):
         moved = False
-        for section, key, values in GRID:
+        for section, key, values in grid:
             current = getattr(getattr(config, section), key)
             scored = []
             for value in values:
@@ -174,6 +198,9 @@ def main():
     parser.add_argument("--degrade", default="dead_weighted")
     parser.add_argument("--dead-share", type=float, default=0.85)
     parser.add_argument("--seeds", type=int, nargs="+", default=[0, 1])
+    parser.add_argument("--realism", action="store_true",
+                        help="also smooth and lose players as the ATD does (E7)")
+    parser.add_argument("--grid", choices=sorted(GRIDS), default="e6")
     parser.add_argument("--lomo", action="store_true", help="leave-one-match-out estimate")
     parser.add_argument("--guard", action="store_true",
                         help="accept only configurations that still solve every synthetic scenario")
@@ -182,7 +209,8 @@ def main():
     base = load(args.base)
     matches = benchmark_matches()
     started = time.time()
-    cases = prepare(matches, args.degrade, args.seeds, args.dead_share, base)
+    cases = prepare(matches, args.degrade, args.seeds, args.dead_share, base,
+                    load_realism() if args.realism else None)
     print("prepared {} cases from {} matches ({:.0f} s)".format(len(cases), len(matches),
                                                                 time.time() - started), flush=True)
     os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -192,7 +220,8 @@ def main():
         for held_out in matches:
             train = [case for case in cases if case[0] != held_out]
             test = [case for case in cases if case[0] == held_out]
-            tuned, _ = descend(train, base, guard=synthetic_guard if args.guard else None)
+            tuned, _ = descend(train, base, guard=synthetic_guard if args.guard else None,
+                               grid=GRIDS[args.grid])
             rows.append({"held_out": held_out, "base": mean_score(test, base),
                          "calibrated": mean_score(test, tuned)})
             print("held out {}: base {:.4f} -> calibrated {:.4f}".format(
@@ -207,22 +236,25 @@ def main():
 
     log = []
     print("base {}: mean spellF1 {:.4f}".format(base.run.name, mean_score(cases, base)), flush=True)
-    tuned, score = descend(cases, base, log, guard=synthetic_guard if args.guard else None)
+    tuned, score = descend(cases, base, log, guard=synthetic_guard if args.guard else None,
+                           grid=GRIDS[args.grid])
     tuned = dataclasses.replace(tuned, run=dataclasses.replace(
         tuned.run, name=args.name,
-        description="{} calibrated on the IDSSE/DFL benchmark (E6), degrade={} dead_share={}".format(
-            base.run.name, args.degrade, args.dead_share)))
+        description="{} calibrated on the other-match benchmark ({}), degrade={} dead_share={} "
+                    "realism={}".format(base.run.name, EXPERIMENT[args.grid], args.degrade,
+                                        args.dead_share, args.realism)))
     print("calibrated: mean spellF1 {:.4f} ({:.0f} s)".format(score, time.time() - started))
     with open(os.path.join(RESULTS_DIR, "calibration_{}.json".format(time.strftime("%Y%m%d-%H%M%S"))),
               "w", newline="\n") as handle:
         json.dump({"args": vars(args), "log": log, "score": score, "config": tuned.to_dict()},
                   handle, indent=1)
     if args.out:
-        header = ("Experiment E6: {} calibrated by scripts/omb_calibrate.py on the IDSSE/DFL\n"
-                  "benchmark ({} matches, degrade={}, dead_share={}, seeds={}).\n"
-                  "Mean benchmark spellF1 {:.4f}. Other matches' labels only (D-017); nothing\n"
-                  "here was fitted to the competition match or its public window.").format(
-                      base.run.name, len(matches), args.degrade, args.dead_share, args.seeds, score)
+        header = ("Experiment {}: {} calibrated by scripts/omb_calibrate.py on the other-match\n"
+                  "benchmark ({} matches, degrade={}, dead_share={}, realism={}, seeds={},\n"
+                  "grid {}). Mean benchmark spellF1 {:.4f}. Other matches' labels only (D-017);\n"
+                  "nothing here was fitted to the competition match or its public window.").format(
+                      EXPERIMENT[args.grid], base.run.name, len(matches), args.degrade,
+                      args.dead_share, args.realism, args.seeds, args.grid, score)
         with open(args.out, "w", newline="\n") as handle:
             handle.write(to_toml(tuned, header))
         print("wrote", args.out)
