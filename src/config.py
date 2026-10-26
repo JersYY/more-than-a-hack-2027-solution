@@ -59,6 +59,8 @@ class DeadBallConfig:
     activity_threshold_mps: float = 1.2  # mean player speed below this is dead evidence
     activity_scale_mps: float = 0.4      # evidence per this much below/above the threshold
     activity_max_score: float = 2.0
+    missing_score: float = 0.0     # dead evidence inside a long ball-missing run; 0 = off (D-023)
+    missing_min_s: float = 5.0     # ...a run at least this long
 
 
 @dataclasses.dataclass(frozen=True)
@@ -169,9 +171,9 @@ def validate(config, source="<config>"):
     for name in ("control_m", "free_m", "max_score", "flight_mps"):
         require(getattr(config.evidence, name) > 0, "evidence.{} must be > 0".format(name))
     for name in ("out_margin_m", "moving_mps", "still_mps", "still_min_s", "activity_window_s",
-                 "activity_threshold_mps", "activity_scale_mps"):
+                 "activity_threshold_mps", "activity_scale_mps", "missing_min_s"):
         require(getattr(config.dead_ball, name) > 0, "dead_ball.{} must be > 0".format(name))
-    for name in ("out_score", "moving_score", "still_score", "activity_max_score"):
+    for name in ("out_score", "moving_score", "still_score", "activity_max_score", "missing_score"):
         require(getattr(config.dead_ball, name) >= 0, "dead_ball.{} must be >= 0".format(name))
     require(config.temporal.window >= 0, "temporal.window must be >= 0")
     require(config.temporal.evidence_scale > 0, "temporal.evidence_scale must be > 0")

@@ -19,20 +19,23 @@ BALL_MISSING_SCORE = 1000.0
 def dead_evidence(features, config):
     """(n,) float64 dead-ball evidence from a features dict. Ticket T4; tests/test_dead_ball.py.
 
-    Inputs: features ball_seen, ball_out_m, ball_speed_mps, ball_still_s, activity_mps (NaN =
-    unknown) and config: src.config.DeadBallConfig.
+    Inputs: features ball_seen, ball_out_m, ball_speed_mps, ball_still_s, ball_missing_s,
+    activity_mps (NaN = unknown) and config: src.config.DeadBallConfig.
 
     kind "ball_missing" -- official baseline: +BALL_MISSING_SCORE where the ball is not seen,
         -BALL_MISSING_SCORE where it is.
-    kind "cues" -- the sum of four terms, each 0 where its input is NaN:
+    kind "cues" -- the sum of five terms, each 0 where its input is NaN:
         +out_score       where ball_out_m > out_margin_m                     (beyond a line)
         -moving_score    where ball_out_m == 0 and ball_speed_mps > moving_mps (moving in play)
         +still_score     where ball_still_s >= still_min_s                    (placed for a restart)
         clip((activity_threshold_mps - activity_mps) / activity_scale_mps,
              -activity_max_score, +activity_max_score)                       (players walking)
+        +missing_score   where ball_missing_s >= missing_min_s                (long gap, D-023)
 
-    A missing ball contributes nothing by itself: missing is not dead. Only + - * / and
-    comparisons are used (D-016).
+    A short gap contributes nothing, and with missing_score = 0 (the hybrid_v1 default) no gap
+    does: missing is not dead by definition. A long gap is evidence, to be weighed against the
+    players' activity -- on this ATD the ball is missing mostly while players walk (D-023). Only
+    + - * / and comparisons are used (D-016).
     """
     seen = np.asarray(features["ball_seen"], dtype=bool)
     if config.kind == "ball_missing":
@@ -51,4 +54,7 @@ def dead_evidence(features, config):
     walking = np.clip((config.activity_threshold_mps - activity) / config.activity_scale_mps,
                       -config.activity_max_score, config.activity_max_score)
     evidence += np.where(np.isfinite(activity), walking, 0.0)
+    if config.missing_score:
+        gap = np.asarray(features["ball_missing_s"], dtype=np.float64)
+        evidence += np.where(gap >= config.missing_min_s, config.missing_score, 0.0)
     return evidence

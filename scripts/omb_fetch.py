@@ -39,19 +39,25 @@ BLOCK = 1 << 20
 
 
 def fetch(file_id, path):
-    """Download one file to path via a .part file; skip it if path already exists."""
+    """Download one file to path via a .part file, resuming a .part left by an interrupted run;
+    skip it if path already exists."""
     if os.path.isfile(path):
         return "present"
     part = path + ".part"
     for attempt in range(1, ATTEMPTS + 1):
         try:
-            with urllib.request.urlopen(DOWNLOAD_URL.format(file_id), timeout=120) as response, \
-                    open(part, "wb") as handle:
-                expected = int(response.headers.get("Content-Length") or 0)
-                written = 0
-                for block in iter(lambda: response.read(BLOCK), b""):
-                    handle.write(block)
-                    written += len(block)
+            done = os.path.getsize(part) if os.path.isfile(part) else 0
+            request = urllib.request.Request(DOWNLOAD_URL.format(file_id))
+            if done:
+                request.add_header("Range", "bytes={}-".format(done))
+            with urllib.request.urlopen(request, timeout=120) as response:
+                resumed = done and response.status == 206
+                expected = int(response.headers.get("Content-Length") or 0) + (done if resumed else 0)
+                with open(part, "ab" if resumed else "wb") as handle:
+                    written = done if resumed else 0
+                    for block in iter(lambda: response.read(BLOCK), b""):
+                        handle.write(block)
+                        written += len(block)
             if expected and written != expected:
                 raise IOError("got {} of {} bytes".format(written, expected))
             os.replace(part, path)

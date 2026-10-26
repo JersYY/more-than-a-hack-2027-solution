@@ -254,3 +254,49 @@ It is written down before any candidate exists, so it cannot be bent around one.
 The feasibility spike's modules are kept in `outputs/spike_phase2/`, which is gitignored and
 local. Phase 3 implements the tickets in `src/` with the tests as the specification. The spike is
 a comparison point, not code to paste. It was written against the tests in an hour.
+
+---
+
+# Phase 3 — implementation and calibration
+
+## D-023 — A long ball gap may count as dead-ball evidence (calibrated; off in hybrid_v1)
+
+- **What changed.** D-012 and `docs/architecture.md` §4.2 said a missing ball contributes nothing.
+  Two pieces of evidence, both available without the competition's labels, say that is too strict
+  for tracking like ours.
+- **Evidence from the ATD** (aggregates, `scripts/atd_ball_profile.py`):
+  - the ball is missing in only ~150 runs over the graded frames;
+  - runs have a median of 10.7 s, and almost none last 2–5 s;
+  - players move at 1.18 m/s on average while it is missing, against 2.16 m/s while it is seen;
+  - over gaps of 20 s or more, players move at ~1.0 m/s.
+
+  That rhythm and pace are a stoppage's, not an occlusion's.
+- **Evidence from Metrica Sample Game 3.** The official baseline's D ("ball missing") has a precision
+  of 1.000 there: every missing frame is dead.
+- **Decision.** A new cue: `dead_ball.missing_score` is added for frames inside a missing run of at
+  least `missing_min_s`.
+  - The default is 0, so `hybrid_v1` and all acceptance tests are unchanged.
+  - Its weight is chosen on the other-match benchmark (E6), like every other weight.
+  - The synthetic `occlusion_long` scenario (6 s gap in live play, players running) keeps a
+    calibrated weight honest: it must not outvote clear live activity.
+- **Disclosure.** The cue and its grid entry were added *after* the first benchmark comparison
+  (SG3), so they are not part of the pre-declared grid. `docs/experiments.md` logs it that way.
+
+## D-024 — The benchmark as built: 7 DFL matches degraded, plus Metrica Sample Game 3 as is
+
+- **DFL/IDSSE matches.** Clean tracking, so every score is taken after the ball is deleted in the
+  ATD's rhythm (`src/degrade.py`, D-017):
+  - the primary mode is `dead_weighted`, with its dead-ball share estimated from aggregates (E6
+    log);
+  - `renewal` is the robustness check.
+- **Sample Game 3** is never degraded: its gaps are its tracker's own. Its labels come from Metrica's
+  events by a rule fixed before any model was scored on it (`src/omb.py`):
+  - RECOVERY or a restart changes possession;
+  - BALL OUT, a goal, a shot going out, a foul, offside or handball make the ball dead until the
+    next restart;
+  - a restart during "live" makes it dead from the previous event's end.
+
+  Result: 42% D, 331 possessions, 89 stoppages for 90 restarts.
+- **Selection.** Configurations are compared by mean official spellF1 over the 8 matches, one vote
+  each. For the final candidate, leave-one-match-out says whether the gain survives on a match the
+  calibration never saw.

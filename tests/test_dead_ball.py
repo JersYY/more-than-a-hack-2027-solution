@@ -18,7 +18,7 @@ CUES = DeadBallConfig()           # the hybrid_v1 values
 def features(n, **columns):
     neutral = {"ball_seen": np.ones(n, dtype=bool), "ball_out_m": np.zeros(n),
                "ball_speed_mps": np.full(n, 1.0), "ball_still_s": np.zeros(n),
-               "activity_mps": np.full(n, CUES.activity_threshold_mps)}
+               "ball_missing_s": np.zeros(n), "activity_mps": np.full(n, CUES.activity_threshold_mps)}
     neutral.update({name: np.asarray(value, dtype=neutral[name].dtype)
                     for name, value in columns.items()})
     return neutral
@@ -58,6 +58,14 @@ def test_a_missing_ball_alone_is_not_dead():
     e = dead_evidence(features(2, ball_seen=[False, False], ball_out_m=[np.nan, np.nan],
                                ball_speed_mps=[np.nan, np.nan]), CUES)
     assert list(e) == [0.0, 0.0]
+
+
+def test_a_long_gap_is_evidence_only_when_configured():
+    gap = features(3, ball_seen=[False] * 3, ball_out_m=[np.nan] * 3, ball_speed_mps=[np.nan] * 3)
+    gap["ball_missing_s"] = np.array([1.0, 5.0, 12.0])
+    assert list(dead_evidence(gap, CUES)) == [0.0, 0.0, 0.0]                 # hybrid_v1: off
+    on = DeadBallConfig(missing_score=1.5, missing_min_s=5.0)
+    assert list(dead_evidence(gap, on)) == [0.0, 1.5, 1.5]
 
 
 def test_the_cues_add_up():
