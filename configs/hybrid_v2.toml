@@ -1,0 +1,50 @@
+# Experiment E6: hybrid_v1 calibrated by scripts/omb_calibrate.py on the IDSSE/DFL
+# benchmark (8 matches, degrade=dead_weighted, dead_share=0.9, seeds=[0, 1]).
+# Mean benchmark spellF1 0.5268. Other matches' labels only (D-017); nothing
+# here was fitted to the competition match or its public window.
+
+[run]
+name = "hybrid_v2"
+description = "hybrid_v1 calibrated on the IDSSE/DFL benchmark (E6), degrade=dead_weighted dead_share=0.9"
+
+[evidence]
+kind = "soft_control"
+control_m = 1.0
+free_m = 1.5
+max_score = 3.0
+flight_mps = 8.0
+
+[dead_ball]
+kind = "cues"
+out_margin_m = 0.5
+out_score = 4.0
+moving_mps = 3.0
+moving_score = 1.0
+still_mps = 0.5
+still_min_s = 1.5
+still_score = 1.0
+activity_window_s = 2.0
+activity_threshold_mps = 1.6
+activity_scale_mps = 0.8
+activity_max_score = 1.0
+missing_score = 1.0
+missing_min_s = 2.0
+
+[temporal]
+decoder = "viterbi"
+window = 50
+evidence_scale = 0.8
+alive_bonus = 1.2
+turnover_cost = 4.5
+stop_cost = 6.9
+restart_cost = 5.9
+fixed_point = 1000000
+
+[smart_tagging]
+enabled = false
+phase_score = 0.3
+set_piece_score = 1.0
+
+[output]
+ungraded = "X"
+abstain = "never"

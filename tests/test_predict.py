@@ -22,6 +22,7 @@ from src.synthetic import BAR, SCENARIOS
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ACCURACY_FLOOR = 0.90           # was 0.95 until the synthetic players moved at real speeds (D-025)
 HYBRID = load(os.path.join(ROOT, "configs", "hybrid_v1.toml"))
 BASELINE = load(os.path.join(ROOT, "configs", "baseline.toml"))
 
@@ -35,8 +36,25 @@ def predicted(match, config):
 def test_the_mvp_solves_every_synthetic_scenario(name):
     match = SCENARIOS[name]()
     result = pm.evaluate(match.labels, pm.label_codes(predicted(match, HYBRID)))
+    assert result["spell_f1_mean"] == 1.0          # the behaviour: every possession, whole
+    # A sanity floor on boundary timing, not the behaviour. With players moving at real speeds
+    # (D-025) a speed-based stoppage cue lags a whistle by ~1 s, as it would on real tracking.
+    assert result["accuracy"] >= ACCURACY_FLOOR
+
+
+# Every committed candidate, not only the MVP, must keep every behaviour (D-025: calibration runs
+# under this guard, and this test keeps it from being bypassed later).
+CANDIDATES = ("hybrid_v2.toml", "rc1.toml")
+
+
+@pytest.mark.parametrize("config_name", CANDIDATES)
+@pytest.mark.parametrize("name", sorted(SCENARIOS))
+def test_every_candidate_config_solves_every_synthetic_scenario(config_name, name):
+    match = SCENARIOS[name]()
+    config = load(os.path.join(ROOT, "configs", config_name))
+    result = pm.evaluate(match.labels, pm.label_codes(predicted(match, config)))
     assert result["spell_f1_mean"] == 1.0
-    assert result["accuracy"] >= 0.95
+    assert result["accuracy"] >= ACCURACY_FLOOR
 
 
 @pytest.mark.parametrize("name", BAR)

@@ -45,6 +45,7 @@ from src.temporal import decode  # noqa: E402
 # Params
 RESULTS_DIR = os.path.join(ROOT, "outputs", "omb", "results")
 MIN_GAIN = 0.002            # spellF1; smaller moves are not worth a change of configuration
+GUARD_ACCURACY = 0.90       # the floor of tests/test_predict.py (D-025)
 MAX_PASSES = 3
 # Declared before any benchmark score existed. Each list contains the hybrid_v1 default.
 GRID = (
@@ -82,10 +83,14 @@ def prepare(matches, degrade, seeds, dead_share, base):
 
 
 def spell_f1(case, config):
+    """The official spell_f1_mean, computed by the same three steps possession_metrics.evaluate
+    takes for it -- valid runs of the truth, abstentions filled, spell_scores -- without the
+    frame-level and transition metrics the descent does not use (tests/test_calibrate_tools.py)."""
     _, labels, context, features = case
     states = decode(team_evidence(features, config.evidence),
                     dead_evidence(features, config.dead_ball), context, config.temporal)
-    return pm.evaluate(labels, states)["spell_f1_mean"]
+    runs = pm.valid_runs(labels)
+    return pm.spell_scores(labels, pm.fill_abstentions(states, runs), runs)["mean_f1"]
 
 
 def with_value(config, section, key, value):
@@ -98,8 +103,26 @@ def mean_score(cases, config):
     return float(np.mean([spell_f1(case, config) for case in cases]))
 
 
-def descend(cases, config, log=None):
-    """Coordinate descent over GRID from config; returns (best config, best mean spellF1)."""
+def synthetic_guard(config):
+    """True if config still solves every synthetic scenario: spellF1 1.0 and the accuracy floor of
+    tests/test_predict.py -- the behaviours CHALLENGE.md defines (D-018, D-025)."""
+    from src.predict import predict
+    from src.synthetic import SCENARIOS
+    for build in SCENARIOS.values():
+        match = build()
+        context = frame_context(match.tracking.n_frames, match.blocks, match.tracking)
+        result = pm.evaluate(match.labels, pm.label_codes(predict(match.tracking, context, config)))
+        if result["spell_f1_mean"] < 1.0 or result["accuracy"] < GUARD_ACCURACY:
+            return False
+    return True
+
+
+def descend(cases, config, log=None, guard=None):
+    """Coordinate descent over GRID from config; returns (best config, best mean spellF1).
+
+    guard, if given, is a predicate every accepted configuration must satisfy; a move that would
+    improve the score but fails it is skipped in favour of the next-best value.
+    """
     best = mean_score(cases, config)
     for passes in range(MAX_PASSES):
         moved = False
@@ -109,14 +132,19 @@ def descend(cases, config, log=None):
             for value in values:
                 candidate = with_value(config, section, key, value)
                 scored.append((mean_score(cases, candidate) if value != current else best, value))
-            score, value = max(scored, key=lambda item: (item[0], -abs(item[1] - current)))
-            if value != current and score > best + MIN_GAIN:
-                config, best, moved = with_value(config, section, key, value), score, True
+            for score, value in sorted(scored, key=lambda item: (-item[0], abs(item[1] - current))):
+                if value == current or score <= best + MIN_GAIN:
+                    break
+                candidate = with_value(config, section, key, value)
+                if guard is not None and not guard(candidate):
+                    continue                         # better on the benchmark, but breaks a behaviour
+                config, best, moved = candidate, score, True
                 if log is not None:
                     log.append({"pass": passes, "param": "{}.{}".format(section, key),
                                 "from": current, "to": value, "spell_f1": round(score, 4)})
                     print("  pass {} {}.{}: {} -> {}   mean spellF1 {:.4f}".format(
                         passes, section, key, current, value, score), flush=True)
+                break
         if not moved:
             break
     return config, best
@@ -147,6 +175,8 @@ def main():
     parser.add_argument("--dead-share", type=float, default=0.85)
     parser.add_argument("--seeds", type=int, nargs="+", default=[0, 1])
     parser.add_argument("--lomo", action="store_true", help="leave-one-match-out estimate")
+    parser.add_argument("--guard", action="store_true",
+                        help="accept only configurations that still solve every synthetic scenario")
     args = parser.parse_args()
 
     base = load(args.base)
@@ -162,7 +192,7 @@ def main():
         for held_out in matches:
             train = [case for case in cases if case[0] != held_out]
             test = [case for case in cases if case[0] == held_out]
-            tuned, _ = descend(train, base)
+            tuned, _ = descend(train, base, guard=synthetic_guard if args.guard else None)
             rows.append({"held_out": held_out, "base": mean_score(test, base),
                          "calibrated": mean_score(test, tuned)})
             print("held out {}: base {:.4f} -> calibrated {:.4f}".format(
@@ -177,7 +207,7 @@ def main():
 
     log = []
     print("base {}: mean spellF1 {:.4f}".format(base.run.name, mean_score(cases, base)), flush=True)
-    tuned, score = descend(cases, base, log)
+    tuned, score = descend(cases, base, log, guard=synthetic_guard if args.guard else None)
     tuned = dataclasses.replace(tuned, run=dataclasses.replace(
         tuned.run, name=args.name,
         description="{} calibrated on the IDSSE/DFL benchmark (E6), degrade={} dead_share={}".format(

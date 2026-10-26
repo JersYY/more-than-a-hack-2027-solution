@@ -1,0 +1,53 @@
+# Release candidate 1: hybrid_v2 (E6, guarded calibration) with the stoppage costs raised by 2.
+#
+# Every value below was chosen on other matches' labels or from first principles -- never on the
+# competition match's ground truth, public or private (docs/experiments.md, D-020). Provenance:
+#   first principles (hybrid_v1)  -> kept where calibration did not move them
+#   E6 benchmark calibration      -> scripts/omb_calibrate.py --guard, 7 IDSSE/DFL matches with
+#                                    ATD-like ball loss + Metrica Sample Game 3 (D-024, D-025)
+#   real-match plausibility (D-026) -> stop/restart costs, benchmark-neutral (0.5151 vs 0.5150)
+# Units: metres, seconds, m/s.
+
+[run]
+name = "rc1"
+description = "hybrid_v2 (E6 guarded calibration) + stop/restart costs +2 against mid-stoppage blips"
+
+[evidence]
+kind = "soft_control"
+control_m = 1.0               # first principles: a player within ~1 m of the ball can play it
+free_m = 1.5                  # E6 (2.5 -> 1.5): beyond ~1.5 m from everyone the ball is loose
+max_score = 3.0
+flight_mps = 8.0              # D-019: faster than a player can run with it -> in flight
+
+[dead_ball]
+kind = "cues"
+out_margin_m = 0.5
+out_score = 4.0               # a ball out of the pitch is dead
+moving_mps = 3.0
+moving_score = 1.0
+still_mps = 0.5
+still_min_s = 1.5
+still_score = 1.0
+activity_window_s = 2.0
+activity_threshold_mps = 1.6  # E6 (1.2 -> 1.6): benchmark play ~2.2-2.4 m/s, stoppages ~1.1-1.4
+activity_scale_mps = 0.8      # E6 (0.4 -> 0.8)
+activity_max_score = 1.0      # E6 (2.0 -> 1.0)
+missing_score = 1.0           # E6 + D-023: a gap of 2 s or more leans dead -- on this ATD the
+missing_min_s = 2.0           #   ball goes missing mostly while players walk
+
+[temporal]
+decoder = "viterbi"
+window = 50                   # unused by the Viterbi decoder
+evidence_scale = 0.8          # E6 (0.2 -> 0.8)
+alive_bonus = 1.2             # E6 (0.7 -> 1.2)
+turnover_cost = 4.5           # E6 (5.7 -> 4.5); 3.0 scored higher but split possessions in duels
+stop_cost = 8.9               # D-026 (6.9 -> 8.9): fewer brief "alive" blips inside stoppages
+restart_cost = 7.9            # D-026 (5.9 -> 7.9)
+fixed_point = 1000000         # integer decoding: the same file on every CPU (D-016)
+
+[smart_tagging]
+enabled = false               # E5 not run: no benchmark has Smart Tagging to validate it on
+
+[output]
+ungraded = "X"
+abstain = "never"

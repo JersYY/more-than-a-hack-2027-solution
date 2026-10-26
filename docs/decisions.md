@@ -300,3 +300,50 @@ a comparison point, not code to paste. It was written against the tests in an ho
 - **Selection.** Configurations are compared by mean official spellF1 over the 8 matches, one vote
   each. For the final candidate, leave-one-match-out says whether the gain survives on a match the
   calibration never saw.
+
+## D-025 — Realistic synthetic speeds, a looser timing floor, and calibration under a behaviour guard
+
+- **Synthetic players were too slow.** Measured on the scenario catalogue: 1.55 m/s in play and
+  0.73 m/s at stoppages. Real football is 2.2–2.4 and 1.1–1.4, measured on the IDSSE/DFL and
+  Metrica benchmark matches. That made every speed-based cue look weaker in synthetic tests than
+  it is. `src/synthetic.py` now drifts players 1.5× faster (2.36 / 1.10 m/s). Found because the
+  first calibrated configuration failed synthetic scenarios; the fix is measured against real
+  data, not against that configuration.
+- **The frame-accuracy floor of the synthetic acceptance test goes from 0.95 to 0.90.** The
+  behavioural criterion is unchanged: spellF1 1.000 on every scenario, every possession whole.
+  At real speeds, players keep running for about a second after a whistle, so any speed-based
+  stoppage detector lags it by that much. hybrid_v1 still solves all 12 scenarios at spellF1
+  1.000, with frame accuracy of 0.92–1.00.
+- **Unguarded calibration was rejected.**
+  - Coordinate descent on the benchmark alone reached mean spellF1 0.5355, against 0.3681 for
+    hybrid_v1.
+  - But it split possessions during duels, and called 2.5–6 s ball losses in open play dead.
+  - The pre-registered selection rule (`docs/experiments.md` §5) forbids breaking a synthetic
+    behaviour, so it is not a candidate. Its parameters stay in the calibration log in
+    `outputs/omb/results/`.
+- **Calibration now runs under a guard.** A move is accepted only if the configuration still
+  solves every synthetic scenario (`scripts/omb_calibrate.py --guard`). The guarded result is
+  `configs/hybrid_v2.toml`.
+
+## D-026 — rc1: stop and restart costs raised by 2, on a label-free plausibility veto
+
+- **Observation.** On the competition match, hybrid_v2 produced 161 stoppages and 21 "alive"
+  blips under 3 s between two stoppages. The 8 benchmark matches have 89–113 true stoppages and
+  3–8 such short live intervals. Aggregates over the blip frames:
+  - the ball reappears;
+  - it is moving half of the time;
+  - a player is beside it;
+  - players walk at 1.22 m/s (stoppage pace; live play is 2.32 m/s).
+
+  That is dead-ball handling the benchmark's simulated gaps do not reproduce, so calibration
+  could not see it.
+- **Variants tried, each against the benchmark on fresh seeds and against the match aggregates:**
+  - alive bonus back to 0.7: −0.005 on the benchmark;
+  - activity cap 2.0: ±0.003, blips 21 → 19;
+  - stop and restart costs +2: **+0.0001 on the benchmark, blips 21 → 13, stoppages 161 → 149**.
+- **Decision.** rc1 = hybrid_v2 with stop_cost 8.9 and restart_cost 7.9. It was chosen on a
+  plausibility diagnostic of the match's own predictions (no labels), at no cost on labelled
+  matches. ~150 stoppages remain. LaLiga's low effective playing time may make that genuine; it
+  was not pushed further.
+- **Guard.** rc1 still solves every synthetic scenario (`tests/test_predict.py` now checks every
+  committed candidate).

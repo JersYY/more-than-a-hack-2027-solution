@@ -196,3 +196,112 @@ public_gt_used_for_selection: false
 status: KEEP
 notes: "Found and fixed mid-pass evidence and team-evidence-as-alive (D-019). Synthetic only."
 ```
+
+---
+
+## 10. Phase 3 results (2026-10-26/27)
+
+All benchmark numbers below come from the official `possession_metrics` on other matches' labels.
+Competition-match numbers are aggregates of our own predictions, never scores: no ground truth of
+that match was read.
+
+### 10.1 The benchmark
+
+| match | source | graded frames | D share | possessions | median | stoppages |
+|---|---|---|---|---|---|---|
+| J03WMX | DFL Köln–Bayern | 145,967 | 41.5% | 511 | 3.0 s | 103 |
+| J03WN1 | DFL Bochum–Leverkusen | 141,561 | 51.7% | 500 | 3.1 s | 107 |
+| J03WOH | DFL Düsseldorf–Regensburg | 137,214 | 47.6% | 402 | 3.9 s | 102 |
+| J03WOY | DFL Düsseldorf–Rostock | 142,536 | 46.5% | 456 | 3.6 s | 113 |
+| J03WPY | DFL Düsseldorf–Nürnberg | 146,211 | 44.3% | 421 | 3.8 s | 97 |
+| J03WQQ | DFL Düsseldorf–St. Pauli | 142,345 | 40.7% | 401 | 4.7 s | 99 |
+| J03WR9 | DFL Düsseldorf–Kaiserslautern | 146,810 | 41.9% | 370 | 4.2 s | 92 |
+| SG3 | Metrica Sample Game 3 (events) | 142,698 | 42.0% | 331 | 4.8 s | 89 |
+
+**Open question 1 of §5, answered.** DFL possessions behave like Metrica's event-derived ones: a
+median of 3–5 s, 7–17% shorter than 1 s, 89–113 stoppages. So DFL is used for every parameter,
+not only the dead-ball ones.
+
+### 10.2 How the ATD loses the ball, and what that means (aggregates only)
+
+- **Run lengths.** ~150 missing runs over graded frames, median 10.7 s, p90 34 s; only 18 are
+  shorter than 5 s (`configs/atd_ball_runs.json`).
+- **Player pace.** Players move at 1.18 m/s on average while the ball is missing, and at 2.16 m/s
+  while it is seen. On labelled matches, live play runs at 2.20–2.43 m/s and stoppages at
+  1.13–1.38.
+- **Mixture estimate.** Solving the mixture: ~96–100% of the ATD's missing frames are probably
+  stoppages, and the ATD's dead share is ~44–52% of graded frames.
+
+This is why the long-gap cue exists (D-023), and why the benchmark's primary degradation places
+90% of the hidden frames in stoppages (D-024).
+
+### 10.3 Scores on the benchmark (mean over 8 matches; DFL degraded, seeds 2–3 never used in calibration)
+
+| ball-loss assumption | official baseline | hybrid_v1 | **rc1** |
+|---|---|---|---|
+| clean tracking (no ball deleted) | 0.3161 | 0.4621 | **0.5624** |
+| 70% of gaps in stoppages | 0.2890 | 0.3489 | **0.4836** |
+| 90% of gaps in stoppages (primary) | 0.3195 | 0.3652 | **0.5151** |
+| 100% of gaps in stoppages | 0.3397 | 0.3812 | **0.5424** |
+| random gaps (renewal) | 0.2437 | 0.3484 | **0.4337** |
+
+rc1 also has the best macroF1 (0.84 under the primary setting, against 0.71 for the baseline) and
+the best team accuracy. **Leave-one-match-out** (guarded calibration without the match, seed 0):
+the held-out match gains +0.156 on average, every one of the 8 gains (min +0.068 SG3, max +0.192),
+and SG3 gains even though its format and labels differ from every training match.
+
+### 10.4 The competition match: rc1's aggregates (plausibility only)
+
+| | hybrid_v1 | hybrid_v2 | **rc1** | benchmark truth range |
+|---|---|---|---|---|
+| D share of graded frames | ~30% | 45.7% | **45.7%** | 41–52% (ATD estimate 44–52%) |
+| possessions | 242 | 438 | **425** | 331–511 |
+| median possession | 12–14 s | 4.7 s | **4.8 s** | 3.0–4.8 s |
+| stoppages | 84 | 161 | **149** | 89–113 |
+| live blips < 3 s between stoppages | — | 21 | **13** | 3–8 |
+
+### 10.5 Log
+
+```yaml
+id: E1-E4 (P0 MVP, real match)
+hypothesis: "Soft control + flight gate + dead-ball cues + Viterbi run end to end on the match."
+git_commit: "c1d8368"
+config: "configs/hybrid_v1.toml"
+assets: "MATCH (aggregates only)"
+tests: "all 69 acceptance tests pass; run twice -> identical bytes"
+omb_scores: "mean 0.3681 vs baseline 0.3255 (degraded, seeds 0-1); wins 8/8 matches"
+local_diagnostics: "242 possessions, median 12-14 s, D ~30%: under-segmenting, too little D"
+public_gt_used_for_selection: false
+status: KEEP (as the guarded starting point)
+notes: "Under-segmentation: catches 5% of possessions < 2 s on clean DFL."
+---
+id: E6-unguarded
+hypothesis: "Calibrating on the benchmark improves spellF1."
+config: "hybrid_v1 -> coordinate descent, dead_weighted 0.9, seeds 0-1"
+omb_scores: "0.5355"
+public_gt_used_for_selection: false
+status: REJECT
+notes: "Broke synthetic duel and occlusion behaviours (pre-registered rule). D-025."
+---
+id: E6-guarded (hybrid_v2)
+hypothesis: "The same calibration under the synthetic guard keeps most of the gain."
+git_commit: "this commit"
+config: "configs/hybrid_v2.toml"
+omb_scores: "0.5268 (seeds 0-1), 0.5150 (fresh seeds 2-3); LOMO +0.156, 8/8 matches gain"
+public_gt_used_for_selection: false
+status: KEEP
+notes: "Guard cost 0.009. Grid entries for the long-gap cue were added after the SG3 comparison (D-023)."
+---
+id: D-026 (rc1)
+hypothesis: "Raising stop/restart costs removes mid-stoppage blips on the match at no benchmark cost."
+config: "configs/rc1.toml"
+omb_scores: "0.5151 (vs 0.5150), renewal 0.4337 (vs 0.4332)"
+local_diagnostics: "blips 21 -> 13, stoppages 161 -> 149, possessions 425"
+public_gt_used_for_selection: false
+status: KEEP -> release candidate rc1
+notes: "Chosen on a label-free plausibility diagnostic; benchmark-neutral."
+---
+id: E5 (Smart Tagging)
+status: NOT RUN
+notes: "No benchmark match has Smart Tagging, so a gain could not be validated. Deferred."
+```

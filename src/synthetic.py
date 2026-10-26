@@ -49,6 +49,11 @@ FORMATION = ((0.05, 0.50), (0.22, 0.15), (0.20, 0.38), (0.20, 0.62), (0.22, 0.85
              (0.40, 0.15), (0.38, 0.38), (0.38, 0.62), (0.40, 0.85), (0.47, 0.40), (0.47, 0.60))
 LIVE, RESTING = 1.0, 0.25        # how fast the drift clock runs: in play, and at a stoppage
 DRIFT_M = (4.0, 3.0)             # amplitude of each player's wandering around the formation
+# Angular speed of the wandering, rad per second of drift clock. Chosen so the mean player speed
+# matches real football -- ~2.3 m/s in play, ~1.1 m/s at stoppages, as measured on the IDSSE/DFL
+# and Metrica benchmark matches (docs/experiments.md, E6 log). The first version ran at 0.35-0.65
+# and produced 1.55 / 0.73 m/s, which made every speed-based cue look weaker than it is.
+OMEGA_RANGE = (0.55, 1.0)
 CARRY_M = 0.7                    # the carrier runs this far behind the ball
 BRUSH_M = 0.4                    # a brushing opponent gets this close, closer than the carrier
 OUT_M = 2.0                      # how far beyond the touchline a ball that goes out ends up
@@ -100,7 +105,7 @@ class Script(object):
     def __init__(self, seed=0, lead_in_s=1.0):
         rng = np.random.RandomState(seed)
         self._phase = rng.uniform(0.0, 2.0 * np.pi, (N_SLOTS, 2))
-        self._omega = rng.uniform(0.35, 0.65, (N_SLOTS, 2))   # rad per second of drift clock
+        self._omega = rng.uniform(OMEGA_RANGE[0], OMEGA_RANGE[1], (N_SLOTS, 2))
         self._frames = []        # (label, ball xy or None, drift clock, half, {slot: xy}, step)
         self._blocks = []
         self._block_start = None
