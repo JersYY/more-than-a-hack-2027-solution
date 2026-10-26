@@ -48,7 +48,8 @@ terms > official repository docs and scorer code > files in this repository > th
   `requirements-dev.txt`. Exact versions in `requirements-lock.txt` — numpy 2.5.4, pandas 3.1.0,
   kloppy 3.18.0, pytest 9.1.1. matplotlib and Jupyter are not installed; nothing needs them yet.
 - **Evidence it is compatible.** The organisers test the scorer under Python 3.8 and 3.11. Under
-  this environment `evaluation/run_evaluation.py` reproduces the public-window table in README.md
+  this environment `evaluation/run_evaluation.py` reproduces the public-window table in the
+  organisers' README (now `README_ORGANISERS.md`)
   to four decimals for all four baselines.
 - **Open.** Phase 4 fixes the final pins and proves a clean install.
 
@@ -105,7 +106,7 @@ terms > official repository docs and scorer code > files in this repository > th
 ## D-009 — The public ground truth checks the pipeline, never chooses between versions
 
 - **Decision.** The 5-minute public ground truth is used for exactly two things: the scorer smoke
-  test (`run_evaluation.py` reproducing README.md), and shape checks in the audit (covered window,
+  test (`run_evaluation.py` reproducing the organisers' README, now `README_ORGANISERS.md`), and shape checks in the audit (covered window,
   label counts, possession count — all published). No module in `src/` reads it. Metric behaviour
   is pinned on synthetic sequences instead (`tests/test_scorer_semantics.py`). Rules: RULES.md §2,
   EVALUATION.md "The public window is not a leaderboard".
@@ -347,3 +348,30 @@ a comparison point, not code to paste. It was written against the tests in an ho
   was not pushed further.
 - **Guard.** rc1 still solves every synthetic scenario (`tests/test_predict.py` now checks every
   committed candidate).
+
+---
+
+# Phase 4 — release
+
+## D-027 — rc1 is frozen as configs/final.toml (2026-10-27)
+
+- **Decision.** The team chose to go straight to release, with no further improvement round.
+  `configs/final.toml` is rc1 value for value; only the run name differs, and
+  `tests/test_release.py` checks the match. It writes the same file as rc1:
+  `db7538d3c9fae9285cc9c40ea6b1c62426c22f1a916cf3ac31c3fdaad90eea61`.
+- **Why rc1.**
+  - It has the best benchmark spellF1 under every ball-loss assumption tried (0.434–0.562 against
+    0.244–0.340 for the official baseline).
+  - Leave-one-match-out: the held-out match gains on all 8.
+  - It solves every synthetic scenario.
+  - Its aggregates on the competition match are within the range of real matches, except for
+    ~150 stoppages against 89–113.
+- **Open at freeze** (`docs/technical_report.md` §9):
+  - short possessions under 2 s are mostly missed;
+  - no last-touch restart prior;
+  - Smart Tagging is unused;
+  - domain shift between the benchmark's tracking and the ATD.
+- **The submission files** are named after the team (SUBMISSION.md): "Aziz goes to
+  barcelona.csv" and "Aziz goes to barcelona.md", built by `scripts/release.py` into the
+  gitignored `outputs/submission/`. A submission CSV is a full set of match labels and does not
+  belong in a public repository.

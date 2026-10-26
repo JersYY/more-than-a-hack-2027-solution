@@ -44,7 +44,7 @@ def test_the_mvp_solves_every_synthetic_scenario(name):
 
 # Every committed candidate, not only the MVP, must keep every behaviour (D-025: calibration runs
 # under this guard, and this test keeps it from being bypassed later).
-CANDIDATES = ("hybrid_v2.toml", "rc1.toml")
+CANDIDATES = ("hybrid_v2.toml", "rc1.toml", "final.toml")
 
 
 @pytest.mark.parametrize("config_name", CANDIDATES)

@@ -38,7 +38,8 @@ and the window ranks the four official baselines in the wrong order (EVALUATION.
    and the check runs again.
 4. Its numbers are never compared between candidates and never quoted as performance.
 
-Phase 1 used the window only for the scorer smoke test (`run_evaluation.py` reproducing README.md)
+Phase 1 used the window only for the scorer smoke test (`run_evaluation.py` reproducing the
+organisers' README, now `README_ORGANISERS.md`)
 and for shape checks in `docs/data_audit.md` (covered frames, published counts).
 
 ## 3. Evaluation routes

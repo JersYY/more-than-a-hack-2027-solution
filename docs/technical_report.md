@@ -1,6 +1,8 @@
 # Frame-level possession from automatic tracking: evidence, dead-ball cues and a priced decoder
 
-*More than a Hack 2027, Phase 1: technical document. Release candidate `rc1`.*
+*More than a Hack 2027, Phase 1: technical document of team **Aziz goes to barcelona**.*
+*Submission: `configs/final.toml` (release candidate rc1, frozen), possession file SHA-256
+`db7538d3c9fae9285cc9c40ea6b1c62426c22f1a916cf3ac31c3fdaad90eea61`.*
 
 ## 1. The problem, and the approach in one paragraph
 
@@ -139,18 +141,18 @@ Three states, D, H and A, decoded per half by Viterbi:
 
 Benchmark mean spellF1 (8 matches, ball degraded, seeds never used in calibration):
 
-| | official baseline | first-principles MVP | **rc1** |
+| | official baseline | first-principles MVP | **final (rc1)** |
 |---|---|---|---|
 | primary setting | 0.320 | 0.365 | **0.515** |
 | random gaps | 0.244 | 0.348 | **0.434** |
 
-On the competition match, rc1 predicts:
+On the competition match, the final configuration predicts:
 
 - 425 possessions with a median of 4.8 s;
 - 45.7% dead ball;
 - 149 stoppages.
 
-All of this lies within or near the range of real matches. **We do not know rc1's score on the
+All of this lies within or near the range of real matches. **We do not know its score on the
 competition's ground truth.** That ground truth is private, and the benchmark is other leagues,
 other tracking and other annotators.
 
@@ -175,9 +177,10 @@ other tracking and other annotators.
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements-lock.txt
 $env:MTAH_DATA_DIR = "<folder containing tactical/ and broadcast/>"
-.venv\Scripts\python.exe -m src.predict --config configs/rc1.toml --output outputs/candidates/rc1.csv
-.venv\Scripts\python.exe evaluation/validate_submission.py outputs/candidates/rc1.csv
-.venv\Scripts\python.exe -m pytest -q          # 230+ tests; data tests need MTAH_DATA_DIR
+.venv\Scripts\python.exe -m src.predict --config configs/final.toml --output outputs/final.csv
+.venv\Scripts\python.exe evaluation/validate_submission.py outputs/final.csv
+# expected SHA-256: db7538d3c9fae9285cc9c40ea6b1c62426c22f1a916cf3ac31c3fdaad90eea61
+.venv\Scripts\python.exe -m pytest -q          # all tests; data tests need MTAH_DATA_DIR
 ```
 
 - **Determinism.** Two runs write byte-identical files; this is tested. The CSV's SHA-256 is in
@@ -185,6 +188,6 @@ $env:MTAH_DATA_DIR = "<folder containing tactical/ and broadcast/>"
 - **Benchmark.** To rebuild it:
   - `python scripts/omb_fetch.py` downloads the DFL data;
   - Sample Game 3 comes from Metrica's sample-data repository;
-  - `python scripts/omb_eval.py configs/rc1.toml` scores it;
+  - `python scripts/omb_eval.py configs/final.toml` scores it;
   - `python scripts/omb_calibrate.py --base configs/hybrid_v1.toml --guard` reruns the
     calibration.
