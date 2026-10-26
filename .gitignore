@@ -53,7 +53,14 @@ data/*
 # insurance against it being recreated in here by habit.
 organizers/
 
+# -- local working outputs ---------------------------------------------------------------------
+# Candidate submissions, regenerated baselines, manifests and audit files. Every one is derived
+# from the gated match data or is a set of labels for the whole match, so the folder stays local:
+# RULES.md forbids redistributing the data or anything that would reconstruct it.
+outputs/
+
 # -- editors and build artifacts ---------------------------------------------------------------
+.pytest_cache/
 .idea/
 .vscode/
 __pycache__/

@@ -1,0 +1,12 @@
+# The working environment for src/, scripts/ and tests/ (docs/decisions.md D-003).
+#
+# requirements.txt is the organisers' scorer environment and stays untouched. This adds kloppy at
+# the version requirements-starter.txt pins -- the reference ATD reader, used here only to
+# cross-check src.data_loader -- and pytest. The notebooks' matplotlib and notebook are left out
+# until a phase needs them.
+#
+# Exact versions of the verified environment are in requirements-lock.txt.
+-r requirements.txt
+
+kloppy==3.18.0
+pytest
