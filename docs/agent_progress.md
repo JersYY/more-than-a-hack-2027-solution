@@ -13,10 +13,14 @@ never assume a claim below without re-running its command.
    ```powershell
    cd "C:\Users\USER\Documents\Kuliah\Lomba\More Than A Hack\more-than-a-hack-2027"
    $env:MTAH_DATA_DIR = "C:\Users\USER\Documents\Kuliah\Lomba\More Than A Hack"
-   .venv\Scripts\python.exe -X utf8 -m pytest -q      # 60 passed with data; data tests skip without
+   .venv\Scripts\python.exe -X utf8 -m pytest -q      # after Phase 2: 120 passed, 69 xfailed
    ```
 
 3. Do not overwrite `evaluation/results/baseline_*.csv`; regenerate into `outputs/` (D-007).
+4. Work happens on branch `solution`. `main` is the organisers' history. Never push to `origin`
+   (the organisers' repository).
+5. An `xfailed` test is an acceptance test whose code does not exist yet (D-018). Implementing a
+   ticket means deleting its file's `pytestmark` line and making the tests pass.
 
 ---
 
@@ -100,3 +104,63 @@ NEXT COMMAND:
   `Team = N/A`, including every throw-in.
 - The ranking metric fills `X` forward within a half, so abstaining is free inside a possession
   and costly across a handover (pinned in `tests/test_scorer_semantics.py`).
+
+---
+
+## Run 2 — Phase 2: architecture and experiment contracts
+
+**2026-10-26 16:06 UTC** · branch `solution`, on top of Phase 1 commit `f281e3b` · committed at the end of
+this run (see git log).
+
+```text
+PHASE: 2
+STATUS: PASS
+FILES CREATED/CHANGED:
+  new      docs/architecture.md, docs/feature_spec.md, docs/experiments.md, docs/tickets.md
+  changed  docs/decisions.md (D-013..D-022), docs/agent_progress.md
+  new      src/config.py (implemented), configs/baseline.toml, configs/hybrid_v1.toml
+  new      src/synthetic.py (implemented: scenario generator + 12-scenario catalogue)
+  new      stubs with full contracts: src/preprocess.py, src/possession_evidence.py,
+           src/dead_ball.py, src/temporal.py, src/predict.py, src/smart_tagging.py
+  changed  src/features.py (+ FEATURES contract and build_features stub)
+  new      scripts/synthetic_bench.py
+  new      tests/test_config.py, tests/test_synthetic.py (passing);
+           tests/test_preprocess.py, test_features_spec.py, test_evidence.py, test_dead_ball.py,
+           test_temporal.py, test_predict.py (acceptance, xfail strict until Phase 3)
+  local    outputs/spike_phase2/ (gitignored feasibility spike, D-022)
+COMMANDS EXECUTED (all exit 0 unless noted):
+  git switch -c solution ; git commit (Phase 1, f281e3b)        user approved committing
+  curl range requests to figshare / GitHub                      OMB access check (D-017)
+  python scripts/synthetic_bench.py                              official baseline bar
+  pytest -q --runxfail (scratch spike copy)                      62/65, then 69/69 after D-019
+  python -m pytest -q (with / without MTAH_DATA_DIR)             120 passed + 69 xfailed /
+                                                                 109 passed + 13 skipped + 67 xfailed
+EVIDENCE:
+  bar         official smooth50 mean spellF1 on the 12 synthetic scenarios 0.714; fails all 6
+              visible-ball stoppage / long-occlusion scenarios (src.synthetic.BAR)
+  spike       hybrid_v1 MVP 1.000 on all 12, on 6 seeds; the full contract passed 69/69,
+              including the baseline config reproducing baseline_smooth50.csv on 199,319 real frames
+  design      two flaws found and fixed with discriminating tests (D-019): flight gate, bounded
+              alive bonus
+  contracts   69 acceptance tests: T1 10, T2 9, T3 6, T4 8, T5 14, T6 22; each module's tests
+              build their own inputs, so T1-T5 are independent
+  rules       public-GT protocol pre-registered (D-020); no frame constants (D-015); OMB = other
+              matches only (D-017); assistant sees aggregates only (D-002)
+BLOCKERS: none.
+  Still open from Run 1: whether the signed terms allow aggregates to reach a hosted LLM (D-002).
+NEXT COMMAND:
+  EXECUTE PHASE 3: implement tickets T1-T6 (docs/tickets.md) until the acceptance suite passes
+  with every xfail marker removed, then run configs/hybrid_v1.toml on the match (aggregates only),
+  then build the other-match benchmark (T7, T8). Keep D-002, D-015, D-016, D-020.
+```
+
+### Gate 2 checklist
+
+| Gate 2 requirement | Evidence | Status |
+|---|---|---|
+| Every P0 module has a documented interface | stubs T1–T6 with contracts in their docstrings; `docs/architecture.md` §3 data contracts | PASS |
+| Synthetic acceptance cases for every P0 module | 69 tests in six files, built from hand-made inputs or `src/synthetic.py` | PASS |
+| A second agent could implement each module independently | the spike did, from the contracts alone, and passed 69/69 | PASS |
+| The MVP beats naive framewise switching in synthetic tests | spike 1.000 vs the official baseline 0.714 (`docs/experiments.md` §7); `tests/test_predict.py` makes it a requirement | PASS |
+| No proposed validation violates the rules | `docs/experiments.md` §1–§3; D-015, D-017, D-020 | PASS |
+| Deliverables | architecture.md, feature_spec.md, experiments.md, tickets.md, config schema and two configs | PASS |

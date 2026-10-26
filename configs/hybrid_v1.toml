@@ -1,0 +1,49 @@
+# The Phase-3 MVP: soft control evidence + dead-ball cues + per-half Viterbi over {D, H, A}.
+#
+# Every value here is a first-principles prior, NOT a tuned number: nothing has been fitted to the
+# provided match or to the public ground truth (docs/experiments.md, rules section). Experiment E6
+# calibrates them on other matches' labels; until then these are the defaults, with their reasons.
+# Units: metres, seconds, m/s. Scores are log-odds-like and only their ratios to the costs matter.
+
+[run]
+name = "hybrid_v1"
+description = "soft control + dead-ball cues + Viterbi; first-principles defaults, uncalibrated"
+
+[evidence]
+kind = "soft_control"
+control_m = 1.0               # a player within ~1 m of the ball can play it; weight 1/4 at 1 m
+free_m = 2.5                  # beyond ~2.5 m from everyone the ball is loose: no team evidence
+max_score = 3.0
+flight_mps = 8.0              # faster than a sprinter can run with it: in flight, nobody controls
+                              # it -- possession changes at the reception, not mid-pass (D-019)
+
+[dead_ball]
+kind = "cues"
+out_margin_m = 0.5            # tracking noise is ~0.1-0.3 m; 0.5 m beyond a line is out
+out_score = 4.0               # the strongest single cue: a ball out of the pitch is dead
+moving_mps = 3.0              # in play the ball usually moves faster than a jog
+moving_score = 1.0
+still_mps = 0.5
+still_min_s = 1.5             # a ball at rest for 1.5 s is placed for a restart, not dribbled
+still_score = 1.0
+activity_window_s = 2.0       # players react to a stoppage over a couple of seconds
+activity_threshold_mps = 1.2  # mean player speed: ~2 m/s in play, walking pace at stoppages
+activity_scale_mps = 0.4
+activity_max_score = 2.0
+
+[temporal]
+decoder = "viterbi"
+evidence_scale = 0.2          # ~5 correlated frames carry one frame's worth of information
+alive_bonus = 0.7             # ~ln 2: a player next to the ball is as likely at a restart as in
+                              # play, so team evidence says almost nothing about alive vs D (D-019)
+turnover_cost = 5.7           # ~ln(300): a possession lasts ~12 s = 300 frames on average
+stop_cost = 6.9               # ~ln(1000): ~40 s of live play between stoppages
+restart_cost = 5.9            # ~ln(375): a stoppage lasts ~15 s
+fixed_point = 1000000         # integer decoding: identical output on every CPU (D-016)
+
+[smart_tagging]
+enabled = false               # P1, experiment E5
+
+[output]
+ungraded = "X"                # outside the two halves nothing is scored
+abstain = "never"             # on graded frames X only repeats the last label for spellF1

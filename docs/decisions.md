@@ -138,3 +138,119 @@ terms > official repository docs and scorer code > files in this repository > th
   bit-for-bit so the baseline files can test the loader. The nearest player is not the player in
   control (CHALLENGE.md, "What does not count as a change of possession"); the possession model is
   Phase 2's to design.
+
+---
+
+# Phase 2 — architecture and experiment contracts
+
+## D-013 — The model: per-frame evidence, then an offline per-half Viterbi over {D, H, A}
+
+- **Decision.** Two evidence streams per frame, team (H vs A) and dead ball (D vs live), decoded
+  together by a three-state Viterbi with a cost on every change, run separately for each half
+  (`docs/architecture.md` §4).
+- **Why.** The ranking metric scores whole possessions. A change cost is the direct way to say "a
+  brush is not a change of possession, seconds of control are". Offline decoding places changes
+  where the evidence starts; a causal filter places them where it finally noticed.
+- **Rejected for now:**
+  - a causal hysteresis state machine (the playbook's first suggestion): late boundaries by
+    construction;
+  - EM-fitted HMMs: tuning to this match's own statistics with no check;
+  - a learned sequence model first: nothing to train on until the other-match benchmark exists.
+    That is now E6b.
+
+## D-014 — Configuration in TOML, not YAML
+
+- **Decision.** `configs/*.toml`, read by the standard library's `tomllib`, with the schema in
+  `src/config.py`. The playbook names `configs/*.yaml`.
+- **Why.** No new dependency; comments are allowed; unknown keys are errors.
+- **Cost.** The pipeline needs Python ≥ 3.11 (the lock is on 3.12). The official scorer still runs
+  on 3.8.
+
+## D-015 — Output policy, and no game-specific frame constants in the model
+
+- **Output.** Graded frames always get H/A/D. `X` goes only outside the graded blocks. On
+  spellF1 an `X` equals repeating the last label, because the scorer forward-fills it. On macroF1
+  it is a guaranteed miss. So writing the decoder's label is never worse.
+- **Constants.** The model may use the published half blocks (`games.half_video_blocks`), because
+  they are the grading definition. It must not use the kickoff frames or any other frame number,
+  even published ones. The second half's 2,934 pre-kickoff `D` frames must come out of the
+  dead-ball evidence. RULES.md forbids "rules and constants tied to specific frames", and a
+  system that works only because it knows this match's frame numbers would not work on the next
+  match.
+
+## D-016 — Determinism contract
+
+- **Decision.** No randomness at inference.
+- **Decision path.** Only `+ − × ÷ sqrt`, comparisons, `min`/`max`, and sums in a fixed order.
+  No `exp`, `log`, `pow` or `hypot`: their vectorised versions differ between CPUs in the last
+  bit.
+- **Decoder.** Scores and costs are rounded to fixed point (1e-6) and accumulated in int64.
+- **Output.** LF/ASCII (D-006).
+- **Why.** RULES.md §3 requires the same file when the organisers re-run, on their machine. Ticket
+  T10 checks it; Phase 4 repeats it on a second machine.
+
+## D-017 — Choose between versions on other matches' labels
+
+- **Decision.** Parameters are calibrated and versions compared only on an other-match benchmark,
+  always with the official `possession_metrics`:
+  - IDSSE/DFL: 7 matches, native per-frame BallStatus and BallPossession, CC BY 4.0;
+  - Metrica Sample Game 3: our format, labels derived from events.
+
+  Synthetic scenarios check behaviours. On-match diagnostics only veto.
+- **Access, verified 2026-10-26.** `ndownloader.figshare.com` serves the files (~419 MB per DFL
+  tracking file). kloppy's `springernature.figshare.com` URLs answer HTTP 202 to scripts. Metrica
+  is on raw.githubusercontent.com (53 MB).
+- **Open.** Whether DFL "possession" means control or last touch. T7 measures it before any
+  calibration (`docs/experiments.md` §5).
+
+## D-018 — Acceptance tests before code
+
+- **Decision.** Every P0 module has its acceptance tests written in Phase 2, marked
+  `xfail(raises=NotImplementedError, strict=True)`. The stub's NotImplementedError is the only
+  accepted failure. Any other error, or a pass, fails the suite. So the marker must come off when
+  the code lands.
+- **The behavioural specification** is the synthetic scenario catalogue (`src/synthetic.py`). Its
+  labels follow CHALLENGE.md by construction and are themselves tested
+  (`tests/test_synthetic.py`).
+
+## D-019 — Two design changes found by the feasibility spike
+
+A throwaway implementation of T1–T6 (`docs/experiments.md` §7) passed 62 of 65 acceptance tests
+at first. Two of the failures were design flaws, not threshold issues:
+
+- **The flight gate.** A pass flying past an opponent at 3–4 m produced weak opponent evidence.
+  That moved the change of possession ~0.7 s before the reception, but CHALLENGE.md puts it at
+  control. Now there is no team evidence while the ball moves faster than 8 m/s, faster than a
+  player can run with it (`evidence.flight_mps`).
+- **The bounded alive bonus.** Team evidence entered the H and A scores in full, so a free-kick
+  taker standing at the ball kept it "alive" ~0.8 s into the stoppage. Now team evidence decides
+  H vs A in full, but alive vs D only up to `temporal.alive_bonus` = 0.7 ≈ ln 2. That is the bound
+  a mixture model gives (`docs/architecture.md` §4.3).
+
+Both have discriminating tests: the old formulation fails them and the new one passes. With them
+the spike passed 69 of 69. The third failure was a spec gap: a central-difference ball speed
+across an occlusion. The ball must now be seen at t−2, t and t+2.
+
+## D-020 — The public window, pre-registered
+
+The protocol is in `docs/experiments.md` §2:
+
+- one gross-error check per frozen release candidate (teams swapped; alive and dead confused);
+- never during development, never compared between candidates, never quoted as performance.
+
+It is written down before any candidate exists, so it cannot be bent around one.
+
+## D-021 — Smart Tagging semantics (P1)
+
+- **Code families.** Offensive codes mean the tagged team has the ball. Defensive codes mean the
+  *other* team has it. SET PIECES mark a restart. GOALS are followed by a dead ball. These follow
+  OVERVIEW.md's definitions.
+- **Team mapping.** Team values map to sides through the ATD's own team names (`Layout.home_name`,
+  `Layout.away_name`, which are "Barcelona" and "Atletic Club"), not through a hard-coded string.
+- **Use.** Off in every P0 configuration (E5).
+
+## D-022 — The spike stays out of `src/`
+
+The feasibility spike's modules are kept in `outputs/spike_phase2/`, which is gitignored and
+local. Phase 3 implements the tickets in `src/` with the tests as the specification. The spike is
+a comparison point, not code to paste. It was written against the tests in an hour.

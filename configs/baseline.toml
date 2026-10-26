@@ -1,0 +1,22 @@
+# The official baseline_smooth50, expressed in this pipeline's terms.
+#
+# Its only job is to be a regression anchor: `python -m src.predict --config configs/baseline.toml`
+# must write a file whose labels equal evaluation/results/baseline_smooth50.csv on every frame
+# (tests/test_predict.py). If it ever stops doing that, the orchestration broke -- not the model.
+
+[run]
+name = "baseline_smooth50"
+description = "starter/baseline.py, window +/-50: nearest tracked player to the ball, majority vote"
+
+[evidence]
+kind = "nearest_hard"         # team of the nearest tracked slot; no answer without a ball
+
+[dead_ball]
+kind = "ball_missing"         # the official baseline's only notion of a dead ball
+
+[temporal]
+decoder = "majority"
+window = 50                   # +/-2 s; the published floor, spellF1 0.2433 on the full match
+
+[output]
+ungraded = "keep"             # the official files carry H/A/D on every frame, halftime included
