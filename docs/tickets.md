@@ -14,6 +14,21 @@ A strict xfail that starts passing fails the suite. That forces the marker off a
 code lands. A reference spike that passed every acceptance test sits in `outputs/spike_phase2/`
 (local, not committed). Compare against it; do not paste it.
 
+## Status (end of Phase 3, 2026-10-27)
+
+| ticket | status | evidence |
+|---|---|---|
+| T1 preprocess | done | `tests/test_preprocess.py` 10/10 |
+| T2 features | done | `tests/test_features_spec.py` 9/9; real match parsed in ~3 s |
+| T3 team evidence | done | `tests/test_evidence.py` 6/6 |
+| T4 dead-ball evidence | done (+ long-gap cue, D-023) | `tests/test_dead_ball.py` 9/9 |
+| T5 decoder | done | `tests/test_temporal.py` 14/14; 0.16 s per 160k frames |
+| T6 predict + CLI + manifest | done | `tests/test_predict.py`; the baseline config reproduces `baseline_smooth50.csv` byte for byte |
+| T7 benchmark data | done | 7 DFL + Metrica SG3 (`src/omb.py`, `tests/test_omb.py`) |
+| T8 degradation | done | `src/degrade.py`; renewal and dead-weighted modes |
+| T9 Smart Tagging | not done | E5 cannot be validated without tagged labelled matches |
+| T10 determinism | done | `tests/test_determinism.py`: three configs, run twice, identical bytes |
+
 ## Dependency graph
 
 ```text

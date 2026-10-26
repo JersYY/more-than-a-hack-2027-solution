@@ -164,3 +164,58 @@ NEXT COMMAND:
 | The MVP beats naive framewise switching in synthetic tests | spike 1.000 vs the official baseline 0.714 (`docs/experiments.md` §7); `tests/test_predict.py` makes it a requirement | PASS |
 | No proposed validation violates the rules | `docs/experiments.md` §1–§3; D-015, D-017, D-020 | PASS |
 | Deliverables | architecture.md, feature_spec.md, experiments.md, tickets.md, config schema and two configs | PASS |
+
+---
+
+## Run 3 — Phase 3: implementation, benchmark, calibration, release candidate
+
+**2026-10-26 17:28 UTC** · branch `solution` · candidates generated from commit `6863c6a` (clean tree).
+
+```text
+PHASE: 3
+STATUS: PASS
+FILES CREATED/CHANGED:
+  implemented  src/preprocess.py, src/features.py (build_features), src/possession_evidence.py,
+               src/dead_ball.py (+ long-gap cue), src/temporal.py, src/predict.py
+  new          src/omb.py (DFL + Metrica SG3 benchmark), src/degrade.py (ATD-like ball loss)
+  new          scripts/omb_fetch.py, omb_eval.py, omb_calibrate.py, atd_ball_profile.py
+  new          configs/hybrid_v2.toml, configs/rc1.toml, configs/atd_ball_runs.json (aggregate)
+  new tests    test_determinism.py, test_omb.py, test_calibrate_tools.py (+ acceptance tests on)
+  docs         experiments.md (section 10), decisions.md (D-023..D-026), technical_report.md,
+               tickets.md (status), agent_progress.md
+  local        outputs/candidates/{baseline,hybrid_v1,hybrid_v2,rc1}.csv (+ manifests),
+               outputs/candidate_manifest.json, outputs/omb/ (benchmark data, results)
+COMMANDS EXECUTED (exit 0 unless noted):
+  pytest after each ticket (T1..T6, T10)            all 69 acceptance tests pass, markers removed
+  python -m src.predict --config configs/{baseline,hybrid_v1,hybrid_v2,rc1}.toml ...
+  python evaluation/validate_submission.py outputs/candidates/*.csv           all OK
+  python scripts/omb_fetch.py (7 parallel downloads, ~2.6 GB)
+  python scripts/omb_eval.py ... (clean, dead_weighted 0.7/0.9/1.0, renewal; fresh seeds 2-3)
+  python scripts/omb_calibrate.py --guard ; --guard --lomo
+  python -m pytest -q                                with data 236 passed; without 220 + 16 skipped
+EVIDENCE:
+  rc1         outputs/candidates/rc1.csv  sha256 db7538d3c9fae928...  official OK, strict OK,
+              byte-identical on rerun; 425 possessions, 45.7% D, 149 stoppages (aggregates)
+  benchmark   mean official spellF1 on 8 other matches, fresh seeds: rc1 0.515 vs MVP 0.365 vs
+              official baseline 0.320; rc1 best under every ball-loss assumption (0.434-0.562)
+  LOMO        held-out gain +0.156, 8/8 matches gain (min +0.068, max +0.192)
+  synthetic   every committed candidate solves all 12 scenarios (spellF1 1.000)
+  baseline    configs/baseline.toml reproduces the official file byte for byte (6d4e04b8...)
+  public GT   one pre-registered gross-error check on frozen rc1: PASS (booleans only, D-020)
+BLOCKERS: none.
+  Not done: E5 Smart Tagging (no labelled tagged matches to validate on).
+NEXT COMMAND:
+  EXECUTE PHASE 4: freeze rc1 as configs/final.toml, regenerate from a clean environment
+  (pip install -r requirements-lock.txt), compare SHA-256, audit the repository for data,
+  write the README and finalise the technical report; ask before publishing or submitting.
+```
+
+### Gate 3 checklist
+
+| Gate 3 requirement | Evidence | Status |
+|---|---|---|
+| A real full-data end-to-end generation | `python -m src.predict --config configs/rc1.toml` on the tactical ATD, 3.7 s | PASS |
+| The 199,319-row CSV validated | official validator OK, strict check OK, for every candidate | PASS |
+| All declared synthetic and contract tests pass | 236 passed with data, no xfail left | PASS |
+| A reproducible candidate saved | rc1: config, commit `6863c6a`, SHA-256, manifest; reruns are byte-identical | PASS |
+| No forbidden use of ground truth | public window used once, as the pre-registered gross-error check; no frame constants; no hand labels | PASS |
