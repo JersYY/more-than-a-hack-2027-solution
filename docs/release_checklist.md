@@ -48,8 +48,8 @@ and submitting the form wait for the team's review (§3).
 
   None can reconstruct tracking or labels.
 - All commits after the organisers' history are authored by the team member's git identity.
-- The word "Claude" appears once in the repository: in the organisers' own `OVERVIEW.md` (their
-  list of example LLMs), and in their commits. It is not in any of our files or commit messages.
+- The only mention of a commercial AI product is in the organisers' own `OVERVIEW.md` (their
+  list of example LLMs) and their commits. None of our files or commit messages mention one.
 
 ## 3. What the team still has to do
 
