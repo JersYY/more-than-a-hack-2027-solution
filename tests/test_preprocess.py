@@ -1,7 +1,5 @@
-"""Ticket T1 -- src/preprocess.py frame_context(). Acceptance tests, written before the code.
-
-xfail(strict) until T1 lands: NotImplementedError is the expected failure. Once the function
-exists these must pass, and the marker comes off -- a strict xfail that passes fails the suite.
+"""Ticket T1 -- src/preprocess.py frame_context(). Acceptance tests, written in Phase 2 before the
+code (D-018); implemented in Phase 3.
 """
 
 import numpy as np
@@ -12,8 +10,6 @@ from src.data_loader import AWAY, HOME
 from src.preprocess import frame_context
 from src.synthetic import SCENARIOS
 
-pytestmark = pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                               reason="ticket T1 not implemented yet (Phase 3)")
 
 N = 199319
 DEFAULT_SIGNS = {(1, HOME): 1, (1, AWAY): -1, (2, HOME): -1, (2, AWAY): 1}

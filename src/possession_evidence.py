@@ -8,6 +8,8 @@ into "the team gained control". A brush is a few frames of evidence; a controlle
 seconds of it.
 """
 
+import numpy as np
+
 
 def team_evidence(features, config):
     """(n,) float64 team evidence from a features dict. Ticket T3; tests/test_evidence.py.
@@ -32,4 +34,32 @@ def team_evidence(features, config):
     player gets closer, other things equal. Only + - * / are used, so the values are identical on
     every CPU (D-016) -- no exp, log or pow on this path.
     """
-    raise NotImplementedError("Phase 3, ticket T3 -- docs/tickets.md")
+    seen = np.asarray(features["ball_seen"], dtype=bool)
+    d_home = np.asarray(features["d_home_m"], dtype=np.float64)
+    d_away = np.asarray(features["d_away_m"], dtype=np.float64)
+    home_tracked, away_tracked = np.isfinite(d_home), np.isfinite(d_away)
+
+    if config.kind == "nearest_hard":
+        with np.errstate(invalid="ignore"):
+            home = seen & home_tracked & (~away_tracked | (d_home <= d_away))
+            away = seen & away_tracked & (~home_tracked | (d_away < d_home))
+        return config.max_score * (home.astype(np.float64) - away.astype(np.float64))
+
+    w_home = np.where(home_tracked, control_weight(np.where(home_tracked, d_home, 0.0),
+                                                   config.control_m), 0.0)
+    w_away = np.where(away_tracked, control_weight(np.where(away_tracked, d_away, 0.0),
+                                                   config.control_m), 0.0)
+    w_free = control_weight(config.free_m, config.control_m)
+    evidence = config.max_score * (w_home - w_away) / (w_home + w_away + w_free)
+
+    speed = np.asarray(features["ball_speed_mps"], dtype=np.float64)
+    with np.errstate(invalid="ignore"):
+        in_flight = speed > config.flight_mps                  # NaN compares False: no gate
+    return np.where(seen & ~in_flight, evidence, 0.0)
+
+
+def control_weight(distance, control_m):
+    """1 / (1 + (d / control_m)^2)^2: 1 at the ball, 1/4 at control_m, ~d^-4 beyond."""
+    ratio = np.asarray(distance, dtype=np.float64) / control_m
+    base = 1.0 + ratio * ratio
+    return 1.0 / (base * base)

@@ -1,7 +1,7 @@
 """Ticket T2 -- src/features.py build_features() against docs/feature_spec.md.
 
-Acceptance tests written before the code: xfail(strict) until T2 lands, then they must pass and the
-marker comes off. Hand-placed frames, positions in metres on the games.py pitch.
+Acceptance tests written in Phase 2 before the code (D-018). Hand-placed frames, positions in
+metres on the games.py pitch.
 """
 
 import numpy as np
@@ -13,8 +13,6 @@ from src.features import FEATURES, build_features
 from src.preprocess import FrameContext
 from src.synthetic import SCENARIOS, make_tracking
 
-pytestmark = pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                               reason="ticket T2 not implemented yet (Phase 3)")
 
 LENGTH, WIDTH = games.GAMES[games.GAME]["pitch"]
 CONFIG = Config()

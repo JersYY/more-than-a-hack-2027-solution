@@ -2,7 +2,7 @@
 
 This is where "the MVP beats naive framewise switching" (playbook, Phase 2) becomes checkable:
 every synthetic scenario must be solved, including the ones the official baseline fails
-(src.synthetic.BAR). Integration ticket: it needs T1-T5. xfail(strict) until T6 lands.
+(src.synthetic.BAR). Integration ticket: it needs T1-T5.
 """
 
 import json
@@ -20,8 +20,6 @@ from src.predict import predict, run
 from src.preprocess import frame_context
 from src.synthetic import BAR, SCENARIOS
 
-pytestmark = pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                               reason="ticket T6 not implemented yet (Phase 3)")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HYBRID = load(os.path.join(ROOT, "configs", "hybrid_v1.toml"))

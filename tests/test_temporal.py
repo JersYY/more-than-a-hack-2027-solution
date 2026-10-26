@@ -3,7 +3,6 @@
 Evidence arrays are hand-built and the FrameContext constructed directly, so T5 waits for neither
 T1 nor T2-T4. With the hybrid_v1 defaults, +/-3 team evidence is worth 0.6 a frame between H and A
 against a turnover cost of 5.7, and a dead score of 4 is worth 0.8 a frame against 6.9 + 5.9.
-xfail(strict) until T5 lands.
 """
 
 import numpy as np
@@ -15,8 +14,6 @@ from src.config import TemporalConfig
 from src.preprocess import FrameContext
 from src.temporal import decode, majority
 
-pytestmark = pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                               reason="ticket T5 not implemented yet (Phase 3)")
 
 CONFIG = TemporalConfig()
 H, A, D, X = pm.H, pm.A, pm.D, pm.X

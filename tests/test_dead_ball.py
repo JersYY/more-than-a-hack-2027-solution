@@ -1,6 +1,6 @@
 """Ticket T4 -- src/dead_ball.py dead_evidence(). Acceptance tests, written before the code.
 
-Inputs are hand-built feature columns, so T4 does not wait for T2. xfail(strict) until T4 lands.
+Inputs are hand-built feature columns, so T4 did not wait for T2 (D-018).
 Every frame starts neutral -- ball seen and inside, between still and moving, players at the
 activity threshold -- so each test moves exactly one cue.
 """
@@ -11,8 +11,6 @@ import pytest
 from src.config import DeadBallConfig
 from src.dead_ball import BALL_MISSING_SCORE, dead_evidence
 
-pytestmark = pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                               reason="ticket T4 not implemented yet (Phase 3)")
 
 CUES = DeadBallConfig()           # the hybrid_v1 values
 

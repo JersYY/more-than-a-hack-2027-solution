@@ -8,6 +8,8 @@ two different things -- the ball is missing on ~41% of graded frames, mostly in 
 cues below are about the game state instead: a ball beyond a line, a ball at rest, players walking.
 """
 
+import numpy as np
+
 # Params
 # kind "ball_missing" scores are this large so that, like the official baseline, nothing else can
 # outvote them.
@@ -32,4 +34,21 @@ def dead_evidence(features, config):
     A missing ball contributes nothing by itself: missing is not dead. Only + - * / and
     comparisons are used (D-016).
     """
-    raise NotImplementedError("Phase 3, ticket T4 -- docs/tickets.md")
+    seen = np.asarray(features["ball_seen"], dtype=bool)
+    if config.kind == "ball_missing":
+        return np.where(seen, -BALL_MISSING_SCORE, BALL_MISSING_SCORE)
+
+    out = np.asarray(features["ball_out_m"], dtype=np.float64)
+    speed = np.asarray(features["ball_speed_mps"], dtype=np.float64)
+    still = np.asarray(features["ball_still_s"], dtype=np.float64)
+    activity = np.asarray(features["activity_mps"], dtype=np.float64)
+
+    evidence = np.zeros(len(seen))
+    with np.errstate(invalid="ignore"):                       # NaN comparisons are False: no term
+        evidence += np.where(out > config.out_margin_m, config.out_score, 0.0)
+        evidence -= np.where((out == 0.0) & (speed > config.moving_mps), config.moving_score, 0.0)
+        evidence += np.where(still >= config.still_min_s, config.still_score, 0.0)
+    walking = np.clip((config.activity_threshold_mps - activity) / config.activity_scale_mps,
+                      -config.activity_max_score, config.activity_max_score)
+    evidence += np.where(np.isfinite(activity), walking, 0.0)
+    return evidence

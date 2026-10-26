@@ -1,6 +1,6 @@
 """Ticket T3 -- src/possession_evidence.py team_evidence(). Acceptance tests, written before the code.
 
-Inputs are hand-built feature columns, so T3 does not wait for T2. xfail(strict) until T3 lands.
+Inputs are hand-built feature columns, so T3 did not wait for T2 (D-018).
 """
 
 import numpy as np
@@ -9,8 +9,6 @@ import pytest
 from src.config import EvidenceConfig
 from src.possession_evidence import team_evidence
 
-pytestmark = pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                               reason="ticket T3 not implemented yet (Phase 3)")
 
 SOFT = EvidenceConfig(kind="soft_control", control_m=1.0, free_m=2.5, max_score=3.0)
 HARD = EvidenceConfig(kind="nearest_hard", max_score=3.0)
