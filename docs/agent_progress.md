@@ -219,3 +219,47 @@ NEXT COMMAND:
 | All declared synthetic and contract tests pass | 236 passed with data, no xfail left | PASS |
 | A reproducible candidate saved | rc1: config, commit `6863c6a`, SHA-256, manifest; reruns are byte-identical | PASS |
 | No forbidden use of ground truth | public window used once, as the pre-registered gross-error check; no frame constants; no hand labels | PASS |
+
+---
+
+## Run 4 — Phase 4: freeze, reproduce, audit, package
+
+**2026-10-26 17:40 UTC** · release run at commit `e905bde` (clean tree) · team **Aziz goes to barcelona**.
+
+```text
+PHASE: 4
+STATUS: READY_FOR_SUBMISSION   (not submitted; repository still private, awaiting the team's review)
+FILES CREATED/CHANGED:
+  new      configs/final.toml (rc1 frozen, D-027), scripts/release.py, tests/test_release.py,
+           README.md (solution front page), docs/release_checklist.md
+  renamed  README.md -> README_ORGANISERS.md (the organisers' README, history kept)
+  updated  docs/technical_report.md (team name, final hash), docs/decisions.md (D-027)
+  local    outputs/submission/{Aziz goes to barcelona.csv, Aziz goes to barcelona.md,
+           release_report.json, possession_manifest.json}
+COMMANDS EXECUTED (exit 0):
+  python scripts/release.py                         READY_FOR_SUBMISSION, sha256 db7538d3...0eea61
+  git clone <GitHub repo> ; python -m venv ; pip install -r requirements-lock.txt
+    -> python -m src.predict --config configs/final.toml   identical SHA-256; 249 tests pass
+  repository audit (tracked files + full history)    no data, no secrets, no large blobs
+  git push mine solution:main
+EVIDENCE:
+  final CSV   "Aziz goes to barcelona.csv"  sha256 db7538d3c9fae9285cc9c40ea6b1c62426c22f1a916cf3ac31c3fdaad90eea61
+              official validator exit 0; strict OK; structure OK; LF; regenerated identical;
+              3.4 s, ~0.5 GB peak memory
+  clean room  fresh clone of the GitHub repo + fresh venv: same bytes; 249 passed
+  audit       docs/release_checklist.md §2
+BLOCKERS: none technical. Waiting on the team: review, licence choice, D-002 wording, making the
+  repository public, and the form submission (docs/release_checklist.md §3).
+NEXT COMMAND: none for the agent until the team approves publication; then verify the public
+  URL anonymously and confirm the uploaded file's SHA-256.
+```
+
+### Gate 4 checklist
+
+| Gate 4 requirement | Evidence | Status |
+|---|---|---|
+| The exact CSV validates | official validator on "Aziz goes to barcelona.csv": exit 0 | PASS |
+| Reproduction proven | clean-room clone + fresh environment → identical SHA-256 | PASS |
+| Sensitive-data audit passes | no data or secrets in files or history | PASS |
+| All three deliverables exist | CSV, repository URL, technical document | PASS |
+| The team approved publication and submission | pending review | **PENDING → READY_FOR_SUBMISSION** |
