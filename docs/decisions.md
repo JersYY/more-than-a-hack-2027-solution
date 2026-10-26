@@ -375,3 +375,28 @@ a comparison point, not code to paste. It was written against the tests in an ho
   barcelona.csv" and "Aziz goes to barcelona.md", built by `scripts/release.py` into the
   gitignored `outputs/submission/`. A submission CSV is a full set of match labels and does not
   belong in a public repository.
+
+## D-028 — The rules a machine can check are tests (2026-10-27)
+
+- **Why.** The team asked for a rule-by-rule check of the repository against RULES.md. The code,
+  configurations, documents and the whole history were audited (`docs/release_checklist.md`
+  §4). Every rule complies, with one judgement call recorded there (D-026).
+- **Decision.** The mechanical part of the audit becomes `tests/test_rules.py`, so a later change
+  cannot break it silently:
+  - **Code.** No number written in `src/` equals a frame number this match's documents publish:
+    half edges, kickoffs or the file length, ±1. Comments and strings are not code and are not
+    checked.
+  - **Configurations.** No configuration holds a published frame number, or any number of 1,000
+    or more other than `fixed_point`.
+  - **Ground truth.** No model code or configuration names a ground-truth file.
+  - **Data.** No tracked file, and no path or blob in HEAD's history, is match data. That means:
+    - no CSV other than the organisers' five;
+    - nothing under `data/` except its README, and nothing under `outputs/`;
+    - no video, tracking, homography or tagging file;
+    - no blob over 2 MB.
+- **Each check was tested against planted violations.**
+  - A frame constant in code is caught; the same number in a comment or a string is not.
+  - Data paths, extra label CSVs and a configuration key holding a frame number are all caught.
+- **What a test cannot check:** that no person labelled or corrected anything, and how the public
+  window was used. That record stays in this log (D-009, D-015, D-020, D-026) and in the
+  checklist.

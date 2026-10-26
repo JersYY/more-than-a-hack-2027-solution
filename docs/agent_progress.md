@@ -263,3 +263,33 @@ NEXT COMMAND: none for the agent until the team approves publication; then verif
 | Sensitive-data audit passes | no data or secrets in files or history | PASS |
 | All three deliverables exist | CSV, repository URL, technical document | PASS |
 | The team approved publication and submission | pending review | **PENDING → READY_FOR_SUBMISSION** |
+
+---
+
+## Run 5 — Rules audit
+
+**2026-10-27** · after commit `c521ca3` · team **Aziz goes to barcelona**.
+
+```text
+PHASE: 4 (maintenance)
+STATUS: READY_FOR_SUBMISSION (unchanged; not submitted)
+FILES CREATED/CHANGED:
+  new      tests/test_rules.py (43 checks, D-028)
+  updated  docs/release_checklist.md (section 4, rules compliance)
+           docs/technical_report.md (section 10, what the pipeline is made of)
+           README.md (rules section)
+           docs/decisions.md (D-028)
+COMMANDS EXECUTED (exit 0):
+  python -m src.predict --config configs/final.toml    sha256 db7538d3...0eea61 (unchanged)
+  python evaluation/validate_submission.py <csv>        OK
+  python -m pytest -q                                   with data 292 passed;
+                                                        without 276 passed + 16 skipped
+  history scan (every path and blob size of HEAD's history)
+  searches of src/, configs/, tests/ and docs/ for frame constants, ground-truth references
+  and network access
+EVIDENCE:
+  rules 1-10   all comply; one judgement call (rule 5, D-026); docs/release_checklist.md section 4
+BLOCKERS: none.
+NEXT COMMAND: resume the improvement round (benchmark realism first, then the model). Every new
+  parameter is chosen on other matches only.
+```

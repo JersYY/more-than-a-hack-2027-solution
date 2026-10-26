@@ -172,6 +172,15 @@ other tracking and other annotators.
 
 ## 10. Reproduction
 
+**What the pipeline is made of:**
+
+- Python 3.12 with numpy and pandas, at the exact versions in `requirements-lock.txt`;
+- the organisers' `games.py` (the graded halves, pitch size and frame rate) and their scorer;
+- the code in this repository.
+
+It uses no machine-learning framework, no pretrained or private model and no external API. Its only
+information about this match is the provided tracking. The calibration data is public (§7).
+
 ```powershell
 # Python 3.12 (3.11+ for tomllib)
 python -m venv .venv

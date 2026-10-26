@@ -89,6 +89,12 @@ python scripts/omb_calibrate.py --base configs/hybrid_v1.toml --guard   # the E6
 - **Labelled data only from other matches,** with their sources below.
 - **No match data in this repository.** `data/` and `outputs/` are gitignored. The files under
   `configs/` and `docs/` that describe the match hold aggregate statistics only.
+- **The checks a machine can make run with the tests** (`tests/test_rules.py`):
+  - no frame number of this match in `src/` or `configs/`;
+  - no model code or configuration refers to a ground-truth file;
+  - no match data in the repository or anywhere in its history.
+
+  Rule by rule, with evidence: [docs/release_checklist.md §4](docs/release_checklist.md).
 
 ## Layout
 

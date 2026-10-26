@@ -10,7 +10,7 @@ and submitting the form wait for the team's review (§3).
 | technical document | `outputs/submission/Aziz goes to barcelona.md` (a copy of `docs/technical_report.md`) |
 | code repository | https://github.com/JersYY/more-than-a-hack-2027-solution (private until approved) |
 | configuration | `configs/final.toml` = rc1 (D-027) |
-| code commit of the release run | `e905bde` (clean tree); later commits change documentation only |
+| code commit of the release run | `e905bde` (clean tree); later commits change documentation and tests only. Regenerated again after the rules audit (§4): same SHA-256 |
 
 ## 1. The playbook's final acceptance checklist
 
@@ -77,3 +77,43 @@ and submitting the form wait for the team's review (§3).
 
 6. **Keep the confirmation.** Re-check that the uploaded CSV's SHA-256 is the one above: the
    validator checks format, the hash checks identity.
+
+## 4. Rules compliance (audit of 2026-10-27)
+
+Every rule of RULES.md, as the competition lists them, checked against the code, the
+configurations, the documents and the whole git history. The checks a machine can make are tests
+(`tests/test_rules.py`, 43 checks), so they run again on every change.
+
+| # | rule | status | evidence |
+|---|---|---|---|
+| 1 | No manual annotation or correction | complies | Every label comes from `python -m src.predict`. The loader keeps the tracking as delivered (D-005). Nobody labelled or corrected a frame, a ball position, a track or an identity. The only label files in the repository are the organisers' five (tested) |
+| 2 | No human-labelled data from the provided match | complies | Labels used for calibration and validation come from other matches only: 7 IDSSE/DFL matches and Metrica Sample Game 3 (technical report §7). Smart Tagging is not used |
+| 3 | No private ground truth; the public 5 minutes only to verify the pipeline | complies | The private ground truth was never available. The public window was used for three things only: the scorer smoke test, shape checks against published counts, and one pre-registered gross-error check on the frozen candidate (D-009, D-020). No model code or configuration refers to a ground-truth file (tested). The organisers' published baseline score is quoted as theirs and never used |
+| 4 | No external human-produced data about the match | complies | No event data, corrected tracking or annotation of this match from any source. All external data is about other matches |
+| 5 | No match-specific hardcoding | complies, with one judgement call below | No frame number of this match appears in `src/` or `configs/` (tested). The model uses only the organisers' published half blocks, pitch size and frame rate (`games.py`). The second half's pre-kickoff stoppage is found from the evidence. Every parameter was calibrated on other matches |
+| 6 | No unverifiable models or datasets | complies | All code is in this repository, and the dependencies are public pip packages pinned in `requirements-lock.txt`. Both benchmarks are public: IDSSE/DFL on figshare (CC BY 4.0), and Metrica Sample Game 3 in Metrica's sample-data repository. There is no private model |
+| 7 | No irreproducible submissions | complies | Regenerated during this audit: the same SHA-256 `db7538d3…0eea61`. A clean-room clone with a fresh environment gave the same bytes. The decoder runs in integer arithmetic, and the decision path has only exact reductions (counts and a median) |
+| 8 | No redistribution of competition data | complies | No match file is tracked or was ever committed; the test covers the whole history. `data/` and `outputs/` are ignored |
+| 9 | No reconstructable derived data | complies | Documents and configurations hold aggregates only: counts, rates, medians, and a binned run-length histogram. Submission CSVs stay out of the repository |
+| 10 | No undocumented or inaccessible components | complies | The technical report explains the method, the data and the software (§10). `docs/decisions.md` gives every decision with its reason |
+
+**The judgement call (rule 5): D-026.**
+
+- **What happened.** rc1 raised two generic costs (stop and restart, +2 each). The trigger was a
+  label-free count over our own predictions on the provided match: short "alive" spells between
+  two stoppages.
+- **What was not used.** No frame, event or label.
+- **Effect on other matches.** Neutral on the 8 labelled matches (+0.0001).
+- **How we read the rules.** RULES.md allows "inspecting the data to understand them, debug your
+  pipeline and design features". It forbids rules and constants "tied to specific frames". We read
+  D-026 as the former.
+- **If the team wants no doubt at all,** there are two options:
+  - submit hybrid_v2 instead: the same model with every value chosen on other matches alone (stop
+    6.9, restart 5.9);
+  - ask the organisers first, as RULES.md invites.
+
+**Also from the provided tracking, and also aggregate.** The rhythm of ball loss
+(`configs/atd_ball_runs.json`) shapes how the benchmark's ball is deleted. It is never an input of
+the model.
+
+**Outside these ten rules:** the terms' clause on hosted LLMs (D-002) is the team's to confirm (§3).
