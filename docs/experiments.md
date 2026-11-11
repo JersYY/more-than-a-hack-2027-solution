@@ -306,3 +306,14 @@ id: E5 (Smart Tagging)
 status: NOT RUN
 notes: "No benchmark match has Smart Tagging, so a gain could not be validated. Deferred."
 ```
+
+## E8: team evidence timing, 2026-11-11
+
+See [E8 results and protocol](e8_results.md). Experimental `timing_v1` delays
+team evidence eight frames. Seven-match realistic spellF1: 0.4548 -> 0.4626;
+three-match held-out check: 0.4596 -> 0.4664. Short-possession misses barely
+change. Metrica and timing-grid LOMO are now complete. Under the team's added
+external-only rules, the recommended config is `final_external.toml`, based on
+hybrid_v2 rather than the target-plausibility-tuned final. Eight-match realistic
+spellF1: 0.4618 -> 0.4692; LOMO mean gain +0.0064, 8/8 improve.
+See [rule clarification](rules_update.md); earlier configurations remain historical.

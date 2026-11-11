@@ -1,5 +1,9 @@
 # Release checklist — team "Aziz goes to barcelona"
 
+**Historical checklist below.** The current external-only package and review
+status are recorded in [release_external.md](release_external.md). The old
+hashes, commit and publication statements below refer to the 2026-10 release.
+
 **Status: READY_FOR_SUBMISSION. Not submitted.** The repository is still private. Publishing it
 and submitting the form wait for the team's review (§3).
 

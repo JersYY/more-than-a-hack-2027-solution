@@ -30,7 +30,7 @@ from src import submission  # noqa: E402
 from src.config import load  # noqa: E402
 from src.dead_ball import dead_evidence  # noqa: E402
 from src.features import build_features, nearest_team  # noqa: E402
-from src.possession_evidence import team_evidence  # noqa: E402
+from src.possession_evidence import team_evidence, shift_team_evidence  # noqa: E402
 from src.preprocess import frame_context  # noqa: E402
 from src.temporal import decode, majority  # noqa: E402
 
@@ -61,7 +61,9 @@ def predict(tracking, context, config, tags=None, pitch=None):
         codes = majority(nearest_team(tracking, pitch), config.temporal.window)
     else:
         features = build_features(tracking, context, config, pitch)
-        codes = decode(team_evidence(features, config.evidence),
+        team = shift_team_evidence(team_evidence(features, config.evidence), context,
+                                   config.temporal.team_shift_frames)
+        codes = decode(team,
                        dead_evidence(features, config.dead_ball), context, config.temporal)
 
     labels = LABELS[codes]

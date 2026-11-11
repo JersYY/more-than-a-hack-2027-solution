@@ -43,7 +43,7 @@ def test_no_cpu_dependent_functions_on_the_decision_path(module):
 
 
 @pytest.mark.data
-@pytest.mark.parametrize("config", ["baseline.toml", "hybrid_v1.toml", "final.toml"])
+@pytest.mark.parametrize("config", ["baseline.toml", "hybrid_v1.toml", "final.toml", "timing_v1.toml", "final_v2.toml", "final_external.toml"])
 def test_running_twice_writes_the_same_bytes(tmp_path, config):
     first = run(os.path.join(ROOT, "configs", config), str(tmp_path / "first.csv"))
     second = run(os.path.join(ROOT, "configs", config), str(tmp_path / "second.csv"))

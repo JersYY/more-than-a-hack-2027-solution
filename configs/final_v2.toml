@@ -1,0 +1,51 @@
+# Frozen revision E8, 2026-11-11. Original final.toml retained.
+# 8-match realistic validation plus leave-one-match-out timing-grid selection.
+# All eight folds improve; datasets were used by prior calibration.
+# See docs/e8_results.md for protocol, scores, and limitations.
+
+[run]
+name = "final_v2"
+description = "E8 frozen revision: 8-frame team evidence delay; validated on 8 matches and timing-grid LOMO"
+
+[evidence]
+kind = "soft_control"
+control_m = 1.0
+free_m = 1.5
+max_score = 3.0
+flight_mps = 8.0
+
+[dead_ball]
+kind = "cues"
+out_margin_m = 0.5
+out_score = 4.0
+moving_mps = 3.0
+moving_score = 1.0
+still_mps = 0.5
+still_min_s = 1.5
+still_score = 1.0
+activity_window_s = 2.0
+activity_threshold_mps = 1.6
+activity_scale_mps = 0.8
+activity_max_score = 1.0
+missing_score = 1.0
+missing_min_s = 2.0
+
+[temporal]
+decoder = "viterbi"
+window = 50
+evidence_scale = 0.8
+alive_bonus = 1.2
+turnover_cost = 4.5
+stop_cost = 8.9
+restart_cost = 7.9
+fixed_point = 1000000
+team_shift_frames = 8
+
+[smart_tagging]
+enabled = false
+phase_score = 0.3
+set_piece_score = 1.0
+
+[output]
+ungraded = "X"
+abstain = "never"

@@ -325,3 +325,67 @@ NEXT COMMAND: measure transition latency by type with and without realism; then 
   last-touch restart prior. Every new parameter is chosen on other matches only (grid e7,
   --realism, guard, LOMO); re-freeze only on a clear win.
 ```
+
+## Run 7 — E8 timing experiment (2026-11-11)
+
+Resumed at the user's request. See `docs/e8_results.md` for the fixed grid,
+split, results and limitations. Added `scripts/omb_transition_probe.py`,
+`configs/timing_v1.toml`, optional `temporal.team_shift_frames` (default zero),
+boundary tests and a candidate determinism check. No competition GT was read.
+
+Candidate: eight-frame delay; realistic 7-DFL spellF1 0.4548 -> 0.4626,
+clean 0.5612 -> 0.5777. Short-possession misses remain effectively unchanged.
+Final CSV hash remains db7538d3...0eea61. Candidate CSV and detailed reports
+are in gitignored outputs/. Existing edits to docs/data_audit.md were preserved.
+
+Next: Metrica SG3 plus LOMO/robustness validation before freezing any replacement;
+then investigate missing short possessions. `final.toml` is still the submission.
+
+## Run 8 — Metrica and timing-grid LOMO validation (2026-11-11)
+
+Metrica SG3 downloaded from the official repository. Its realistic spellF1
+improves 0.5165 -> 0.5204. Added `scripts/omb_timing_lomo.py` and tests verifying
+held-out scores cannot influence selection. Same fixed E8 grid, training seeds
+0/1, held-out seeds 2/3. All 8 folds improve; mean gain +0.0066, minimum +0.0012.
+This validates the adjustment on historical calibration data, not independent
+external accuracy. Fixed timing revision: 8-match mean 0.4625 -> 0.4698.
+
+Frozen as `configs/final_v2.toml`, retaining the original `final.toml` and its
+release packaging. New CSV: `outputs/local_verification/final_v2.csv`, official
+and strict checks OK; SHA-256 b1afaa1e9b35467d83f696f0b28b8d7054483358f1c52e943a41062c92069c55.
+See docs/e8_results.md. Nothing published or submitted.
+
+## Run 9 — team-supplied rules clarification (2026-11-11)
+
+The user supplied organiser-rule screenshots: parameter tuning on external
+data only; no output-versus-target-video checking; no target manual labels;
+no provided-data uploads to AI services. Recorded in docs/rules_update.md.
+D-026's target plausibility choice is excluded from the new recommended model.
+Historical final/final_v2 remain for audit, not current recommendation.
+
+Repeated timing selection and 8-match LOMO from externally calibrated hybrid_v2.
+New recommended config: configs/final_external.toml (shift 8, stop/restart
+6.9/5.9). Realistic spellF1 0.4618 -> 0.4692, LOMO 8/8 improve, mean +0.0064.
+CSV outputs/local_verification/final_external.csv validates; hash f6f78ee8...8852b.
+DFL CC BY 4.0 and Metrica README usage notice checked; see rules_update.md.
+No video inspection, target GT scoring or manual corrections occurred this round.
+The old release script still packages the historical final, not this revision.
+
+## Run 10 — current release package (2026-11-11)
+
+Updated scripts/release.py to default to final_external.toml and write to a
+separate outputs/submission_external/. New standalone report:
+docs/submission_report.md. Current checklist: docs/release_external.md.
+The package contains team-named CSV and MD, config.toml, prediction manifest,
+release_report.json and an allowlisted submission.zip (five files inside).
+The report is bound to both the CSV hash and the config digest; a mismatch
+fails the build and preserves any previous ZIP under a backup filename.
+
+54 release/rules tests pass, including real build and mismatch rejection.
+The exact current package is READY_FOR_TEAM_REVIEW: official, strict and
+structure checks OK; LF; independent regeneration identical; CSV hash
+f6f78ee82869ba63044548e7884d544455396e872e349834747560200998852b.
+ZIP integrity and its member hashes were verified. Older outputs/submission/
+was preserved. Source changes remain local/uncommitted; nothing was published
+or submitted. Next: team review, commit, independent reproduction, then explicit
+publication/submission authorization.

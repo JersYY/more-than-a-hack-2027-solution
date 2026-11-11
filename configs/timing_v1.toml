@@ -1,0 +1,51 @@
+# EXPERIMENTAL E8, 2026-11-11. Not the frozen submission.
+# Selected on DFL train seeds 0/1, checked on three held-out DFL matches seeds 2/3.
+# Existing calibration datasets; not independent external validation.
+# See docs/experiments.md E8 and scripts/omb_transition_probe.py.
+
+[run]
+name = "timing_v1"
+description = "E8 experimental candidate: delay team evidence by 8 frames; final unchanged"
+
+[evidence]
+kind = "soft_control"
+control_m = 1.0
+free_m = 1.5
+max_score = 3.0
+flight_mps = 8.0
+
+[dead_ball]
+kind = "cues"
+out_margin_m = 0.5
+out_score = 4.0
+moving_mps = 3.0
+moving_score = 1.0
+still_mps = 0.5
+still_min_s = 1.5
+still_score = 1.0
+activity_window_s = 2.0
+activity_threshold_mps = 1.6
+activity_scale_mps = 0.8
+activity_max_score = 1.0
+missing_score = 1.0
+missing_min_s = 2.0
+
+[temporal]
+decoder = "viterbi"
+window = 50
+evidence_scale = 0.8
+alive_bonus = 1.2
+turnover_cost = 4.5
+stop_cost = 8.9
+restart_cost = 7.9
+fixed_point = 1000000
+team_shift_frames = 8
+
+[smart_tagging]
+enabled = false
+phase_score = 0.3
+set_piece_score = 1.0
+
+[output]
+ungraded = "X"
+abstain = "never"

@@ -1,0 +1,52 @@
+# Recommended under team-supplied rules, 2026-11-11.
+# Base: hybrid_v2, calibrated on external matches; excludes D-026.
+# Timing: selected on external matches seeds 0/1; LOMO checked with seeds 2/3.
+# See docs/rules_update.md and docs/e8_results.md.
+# No video comparison or provided-game GT used for selection.
+
+[run]
+name = "final_external"
+description = "External-only E6 base plus 8-frame E8 timing; excludes D-026 target plausibility tuning"
+
+[evidence]
+kind = "soft_control"
+control_m = 1.0
+free_m = 1.5
+max_score = 3.0
+flight_mps = 8.0
+
+[dead_ball]
+kind = "cues"
+out_margin_m = 0.5
+out_score = 4.0
+moving_mps = 3.0
+moving_score = 1.0
+still_mps = 0.5
+still_min_s = 1.5
+still_score = 1.0
+activity_window_s = 2.0
+activity_threshold_mps = 1.6
+activity_scale_mps = 0.8
+activity_max_score = 1.0
+missing_score = 1.0
+missing_min_s = 2.0
+
+[temporal]
+decoder = "viterbi"
+window = 50
+evidence_scale = 0.8
+alive_bonus = 1.2
+turnover_cost = 4.5
+stop_cost = 6.9
+restart_cost = 5.9
+fixed_point = 1000000
+team_shift_frames = 8
+
+[smart_tagging]
+enabled = false
+phase_score = 0.3
+set_piece_score = 1.0
+
+[output]
+ungraded = "X"
+abstain = "never"

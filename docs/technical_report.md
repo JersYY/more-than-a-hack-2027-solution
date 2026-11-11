@@ -1,5 +1,11 @@
 # Frame-level possession from automatic tracking: evidence, dead-ball cues and a priced decoder
 
+**Current recommendation (2026-11-11): `configs/final_external.toml`.** The main
+report records the historical release; section 12 supersedes its parameter
+provenance and configuration recommendation after the team's rule clarification.
+The current standalone submission document is [submission_report.md](submission_report.md),
+which is the document copied into the new release package.
+
 *More than a Hack 2027, Phase 1: technical document of team **Aziz goes to barcelona**.*
 *Submission: `configs/final.toml` (release candidate rc1, frozen), possession file SHA-256
 `db7538d3c9fae9285cc9c40ea6b1c62426c22f1a916cf3ac31c3fdaad90eea61`.*
@@ -200,3 +206,23 @@ $env:MTAH_DATA_DIR = "<folder containing tactical/ and broadcast/>"
   - `python scripts/omb_eval.py configs/final.toml` scores it;
   - `python scripts/omb_calibrate.py --base configs/hybrid_v1.toml --guard` reruns the
     calibration.
+
+## 12. Rule clarification and external-only revision (2026-11-11)
+
+The team's additional organiser-rule screenshots require parameter tuning on
+external data only and prohibit checking output against the provided video.
+Historical D-026 selected stop/restart costs using aggregate target-match
+plausibility; the newly recommended configuration excludes that adjustment.
+
+Use `configs/final_external.toml`: externally calibrated hybrid_v2 plus an
+eight-frame team-evidence delay selected on external matches. Eight-match
+realistic spellF1 improves 0.4618 -> 0.4692; all eight timing-grid LOMO folds
+improve (mean +0.0064). This is validation on previously used calibration
+datasets, not independent external accuracy. No target video comparison or
+target GT selection was performed in this round.
+
+Full protocol, limitations and reproduction: [E8 results](e8_results.md).
+Parameter provenance and external usage notices: [rules update](rules_update.md).
+New CSV SHA-256:
+`f6f78ee82869ba63044548e7884d544455396e872e349834747560200998852b`.
+Earlier report sections and final/final_v2 files describe historical versions.

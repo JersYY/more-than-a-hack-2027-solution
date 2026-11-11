@@ -63,3 +63,22 @@ def control_weight(distance, control_m):
     ratio = np.asarray(distance, dtype=np.float64) / control_m
     base = 1.0 + ratio * ratio
     return 1.0 / (base * base)
+
+
+def shift_team_evidence(team, context, frames):
+    """Shift by signed frames, zero padding per half; never wrap or cross halves.
+
+    Positive delays team attribution. Zero preserves the original decision path.
+    This operates on evidence, before decoding, rather than shifting output labels.
+    """
+    if frames == 0:
+        return team
+    result = np.zeros_like(team)
+    for _, first, last in context.blocks:
+        if abs(frames) >= last - first + 1:
+            continue
+        if frames > 0:
+            result[first + frames:last + 1] = team[first:last + 1 - frames]
+        else:
+            result[first:last + 1 + frames] = team[first - frames:last + 1]
+    return result

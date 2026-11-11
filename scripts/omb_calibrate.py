@@ -38,7 +38,7 @@ from src.dead_ball import dead_evidence  # noqa: E402
 from src.degrade import load_profile, load_realism  # noqa: E402
 from src.features import build_features  # noqa: E402
 from src.omb import benchmark_matches, load_benchmark  # noqa: E402
-from src.possession_evidence import team_evidence  # noqa: E402
+from src.possession_evidence import team_evidence, shift_team_evidence  # noqa: E402
 from src.preprocess import frame_context  # noqa: E402
 from src.temporal import decode  # noqa: E402
 
@@ -111,7 +111,9 @@ def spell_f1(case, config):
     takes for it -- valid runs of the truth, abstentions filled, spell_scores -- without the
     frame-level and transition metrics the descent does not use (tests/test_calibrate_tools.py)."""
     _, labels, context, features = case
-    states = decode(team_evidence(features, config.evidence),
+    team = shift_team_evidence(team_evidence(features, config.evidence), context,
+                               config.temporal.team_shift_frames)
+    states = decode(team,
                     dead_evidence(features, config.dead_ball), context, config.temporal)
     runs = pm.valid_runs(labels)
     return pm.spell_scores(labels, pm.fill_abstentions(states, runs), runs)["mean_f1"]

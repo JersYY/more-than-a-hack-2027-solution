@@ -74,6 +74,7 @@ class TemporalConfig:
     stop_cost: float = 6.9         # H/A -> D
     restart_cost: float = 5.9      # D -> H/A
     fixed_point: int = 1000000     # scores are decoded as integers in units of 1/fixed_point
+    team_shift_frames: int = 0     # E8: positive delays team evidence; padded within each half
 
 
 @dataclasses.dataclass(frozen=True)
